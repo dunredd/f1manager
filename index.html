@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 24 Manager</title>
+
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 1rem;
+    width: 100%;
+    text-align: center;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin: 0 1rem;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+}
+
+main {
+    width: 80%;
+    margin-top: 2rem;
+}
+
+section {
+    margin-bottom: 2rem;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    background-color: #333;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #555;
+}
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>F1 24 Manager</h1>
+        <nav>
+            <ul>
+                <li><a href="#dashboard">Tableau de bord</a></li>
+                <li><a href="#team-management">Gestion d'équipe</a></li>
+                <li><a href="#race-calendar">Calendrier des courses</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="dashboard">
+            <h2>Tableau de bord</h2>
+            <p>Bienvenue dans votre tableau de bord F1 Manager.</p>
+        </section>
+        <section id="team-management">
+            <h2>Gestion d'équipe</h2>
+            <div class="team">
+                <h3>Équipe</h3>
+                <ul id="team-list">
+                    <!-- Liste des membres de l'équipe -->
+                </ul>
+                <button id="add-member">Ajouter un membre</button>
+            </div>
+        </section>
+        <section id="race-calendar">
+            <h2>Calendrier des courses</h2>
+            <div class="races">
+                <h3>Courses à venir</h3>
+                <ul id="race-list">
+                    <!-- Liste des courses -->
+                </ul>
+            </div>
+        </section>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    const teamList = document.getElementById('team-list');
+    const addMemberButton = document.getElementById('add-member');
+
+    const teamMembers = [
+        { name: 'Pilote 1', role: 'Pilote' },
+        { name: 'Ingénieur 1', role: 'Ingénieur' }
+    ];
+
+    const races = [
+        { name: 'Grand Prix de France', date: '2024-07-21' },
+        { name: 'Grand Prix de Monaco', date: '2024-05-26' }
+    ];
+
+    // Afficher les membres de l'équipe
+    teamMembers.forEach(member => {
+        const li = document.createElement('li');
+        li.textContent = `${member.name} - ${member.role}`;
+        teamList.appendChild(li);
+    });
+
+    // Ajouter un membre à l'équipe
+    addMemberButton.addEventListener('click', () => {
+        const name = prompt('Nom du membre :');
+        const role = prompt('Rôle du membre :');
+        if (name && role) {
+            const li = document.createElement('li');
+            li.textContent = `${name} - ${role}`;
+            teamList.appendChild(li);
+        }
+    });
+
+    // Afficher les courses
+    const raceList = document.getElementById('race-list');
+    races.forEach(race => {
+        const li = document.createElement('li');
+        li.textContent = `${race.name} - ${race.date}`;
+        raceList.appendChild(li);
+    });
+});
+
+    </script>
+</body>
+</html>
