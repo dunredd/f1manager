@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Team Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Basic styling for the body */
+        body {
+            font-family: 'Press Start 2P', cursive; /* Apply the arcade font */
+            background-color: #121212; /* Dark background */
+            color: #f1f1f1; /* Light text color */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center; /* Center content horizontally */
+            align-items: flex-start; /* Align content to the top */
+            min-height: 100vh; /* Minimum height of 100% of the viewport height */
+        }
+
+        /* Styling for the main application container */
+        #app {
+            width: 95%; /* Responsive width */
+            max-width: 1200px; /* Maximum width */
+            padding: 20px;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent dark background */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Shadow for depth */
+            margin-top: 70px; /* Add margin to avoid overlap with fixed budget display */
+            margin-bottom: 20px;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            position: relative; /* Needed for positioning elements inside */
+        }
+
+        /* Styling for the main title */
+        h1 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #ff8700; /* Orange color for titles */
+            text-shadow: 0 0 8px rgba(255, 135, 0, 0.8); /* Glow effect for titles */
+        }
+
+        /* Styling for section titles */
+        h2 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #ff8700;
+            text-shadow: 0 0 5px rgba(255, 135, 0, 0.5);
+            font-size: 1.4rem;
+            border-bottom: 1px solid #ff8700; /* Add underline to section titles */
+            padding-bottom: 0.5rem;
+        }
+         /* Styling for card subtitles */
+        h4{
+             margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: #eee;
+            font-size: 1rem;
+        }
+
+        /* Styling for the fixed budget display */
+        #budget-display {
+            position: fixed; /* Fix the budget display to the top */
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 0.75rem 1.5rem; /* Increased padding */
+            border-radius: 5px;
+            z-index: 100; /* Ensure it's above other elements */
+            font-size: 1.1rem; /* Slightly larger font */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            border: 1px solid #ff8700; /* Add orange border */
+        }
+
+        /* Styling for the Race button */
+        #race-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            background-color: #e57300; /* Orange background */
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+             margin-bottom: 1rem; /* Add some space below the button */
+             display: block; /* Make it a block element */
+             width: 100%; /* Make it full width */
+             max-width: 300px; /* Limit max width */
+             margin-left: auto;
+             margin-right: auto; /* Center the button */
+        }
+         #race-button:hover:not(:disabled) {
+            background-color: #ff8700; /* Lighter orange on hover */
+        }
+        #race-button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+        }
+
+
+        /* Styling for the grid containers for selections and lists */
+        #initial-budget-selection, #ecurie-selection, #drivers-list, #cars-list, #car-upgrade-options, #opponent-cars-list, #drivers-list-management {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Responsive grid columns */
+            gap: 1rem; /* Gap between grid items */
+            margin-bottom: 2rem;
+        }
+         /* Specific styling for the standings list and calendar list to be a single column */
+        #season-standings-list, #calendar-list {
+            grid-template-columns: 1fr;
+            display: grid; /* Ensure grid display for single column */
+            gap: 0.5rem; /* Small gap between calendar items */
+        }
+
+
+        /* Styling for individual cards (ecuries, drivers, cars, races) */
+        .card {
+            background-color: #212121; /* Darker background for cards */
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition on hover */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Distribute space evenly */
+             border: 1px solid #444; /* Subtle border */
+        }
+
+        /* Hover effect for cards */
+        .card:not(.disabled):hover { /* Only apply hover to non-disabled cards */
+            transform: translateY(-5px) scale(1.02); /* Slight lift and scale */
+            box-shadow: 0 6px 12px rgba(255, 135, 0, 0.3); /* Larger shadow on hover with orange hint */
+            border-color: #ff8700;
+        }
+
+        /* Styling for card titles */
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #fff;
+            font-size: 1.1rem; /* Adjusted size */
+             border-bottom: 1px dotted #555;
+             padding-bottom: 0.5rem;
+        }
+
+        /* Styling for lists within cards */
+        .card ul {
+            list-style: none; /* Remove default list bullets */
+            padding: 0;
+            margin-bottom: 1rem;
+            flex-grow: 1; /* Allow list to grow and push button down */
+        }
+
+        /* Styling for list items within cards */
+        .card li {
+            margin-bottom: 0.5rem;
+            color: #ddd;
+            font-size: 0.9rem; /* Slightly smaller font size */
+        }
+
+         /* Styling for selected driver list items */
+        .card li.selected-driver {
+             color: #ff8700; /* Highlight selected drivers */
+             font-weight: bold;
+        }
+        /* Styling for stat increase indicator */
+        .stat-increase {
+            color: #4CAF50; /* Green color */
+            font-size: 0.8em;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+
+
+        /* Styling for buttons within cards */
+        .card button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            background-color: #ff8700; /* Orange background */
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease; /* Smooth transition for background color */
+            width: 100%; /* Make buttons fill card width */
+            box-sizing: border-box; /* Include padding in width */
+            margin-top: auto; /* Push button to the bottom */
+        }
+
+        /* Hover effect for buttons */
+        .card button:hover:not(:disabled) {
+            background-color: #e57300; /* Darker orange on hover */
+        }
+         /* Styling for disabled buttons */
+         .card button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+            color: #ccc;
+        }
+
+        /* Styling for the race results section */
+        #race-results {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            background-color: #212121;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            border: 1px solid #555;
+        }
+
+        /* Styling for the race results title */
+        #race-results h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #ff8700; /* Orange title */
+            font-size: 1.2rem;
+        }
+
+        /* Styling for the ordered list of race results */
+        #race-results ol {
+            padding-left: 0; /* Remove default padding */
+            margin-bottom: 1rem;
+            list-style: none; /* Remove default list numbering */
+            counter-reset: race-position; /* Initialize a counter for numbering */
+        }
+
+        /* Styling for individual race result list items */
+        #race-results ol li {
+            margin-bottom: 0.5rem;
+            color: #ddd;
+            font-size: 1rem;
+            display: flex;
+            /* justify-content: space-between; */ /* Remove space-between as time is gone */
+            align-items: center;
+            padding: 0.4rem 0;
+            border-bottom: 1px dotted #444; /* Separator */
+        }
+        #race-results ol li:last-child {
+            border-bottom: none;
+        }
+        #race-results ol li::before {
+            content: counter(race-position) ". "; /* Display the counter value */
+            counter-increment: race-position; /* Increment the counter */
+            font-weight: bold;
+            color: #ff8700;
+            margin-right: 0.8rem; /* Increased margin */
+            min-width: 2em; /* Ensure consistent alignment */
+            text-align: right;
+        }
+        /* Highlight player's drivers in results */
+        #race-results ol li.player-driver {
+            background-color: rgba(255, 135, 0, 0.1); /* Subtle orange background */
+            padding-left: 0.5rem;
+            border-radius: 3px;
+        }
+
+
+        /* Styling for the race message paragraph */
+        #race-results p#race-message { /* Target specific p tag */
+            font-size: 0.9rem; /* Smaller font for messages */
+            color: #bbb;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem; /* Add space before prize money */
+        }
+         /* Styling for prize money display */
+        #prize-money-earned {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #444;
+        }
+        #prize-money-earned h4 {
+             color: #ff8700;
+             margin-bottom: 0.8rem;
+         }
+        #prize-money-earned ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 0.5rem 0;
+         }
+        #prize-money-earned li {
+             margin-bottom: 0.3rem;
+             font-size: 0.9rem;
+             color: #ddd;
+         }
+        #prize-money-earned p { /* Style the total prize money */
+            font-weight: bold;
+            color: #fff;
+            margin-top: 0.8rem;
+        }
+
+         /* Styling for the visual simulation container (Placeholder) */
+        #visual-simulation-placeholder {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px dashed #ff8700; /* Dashed orange border */
+            color: #bbb;
+            text-align: center;
+            min-height: 100px; /* Give it some height */
+            position: relative; /* Needed for absolute positioning of cars */
+            overflow: hidden; /* Hide cars outside the track */
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        #visual-simulation-placeholder p {
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        /* Styling for disabled cards */
+        .disabled{
+            opacity: 0.7; /* Slightly less opaque */
+            cursor: not-allowed; /* Not-allowed cursor */
+            border-color: #555; /* Grey border for disabled */
+        }
+        /* Styling for the message box */
+        .message-box {
+            position: fixed; /* Fixed position */
+            top: 80px; /* Position below the budget display */
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px); /* Start slightly above */
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            z-index: 101; /* Ensure it's above budget display */
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; /* Smooth transition for showing/hiding */
+            opacity: 0; /* Initially hidden */
+            pointer-events: none; /* Don't block pointer events when hidden */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            border: 1px solid #ff8700;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        /* Styling for the message box when shown */
+        .message-box.show {
+            opacity: 1; /* Make visible */
+            transform: translateX(-50%) translateY(0); /* Move to its final position */
+            pointer-events: all; /* Allow pointer events when visible */
+        }
+
+        /* Styling for error messages */
+        .message-box.error {
+            background-color: rgba(200, 0, 0, 0.9); /* Darker Red background for errors */
+            border-color: #ff4444;
+            color: #fff;
+        }
+        /* Styling for success messages */
+         .message-box.success {
+             background-color: rgba(0, 150, 0, 0.9); /* Green background for success */
+             border-color: #44ff44;
+             color: #fff;
+         }
+          /* Styling for info messages */
+         .message-box.info {
+             background-color: rgba(0, 100, 200, 0.9); /* Blue background for info */
+             border-color: #44aaff;
+             color: #fff;
+         }
+
+
+        /* --- New Tab Styles --- */
+        /* Styling for the tabs container */
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem; /* Increased space */
+            border-bottom: 2px solid #ff8700; /* Orange border below tabs */
+             flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
+        }
+
+        /* Styling for tab buttons */
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background-color: transparent;
+            color: #ddd;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem; /* Slightly smaller font */
+            transition: color 0.3s ease, border-bottom 0.3s ease, background-color 0.3s ease;
+            border-bottom: 3px solid transparent; /* Transparent border by default */
+            margin-bottom: -2px; /* Overlap the container border */
+            text-align: center;
+            flex-grow: 1; /* Allow tabs to grow */
+        }
+
+        /* Styling for the active tab button */
+        .tab-button.active {
+            color: #ff8700; /* Orange color for active tab */
+            border-bottom: 3px solid #ff8700; /* Orange border for active tab */
+            background-color: rgba(255, 135, 0, 0.1); /* Subtle orange background */
+        }
+
+        /* Hover effect for tab buttons */
+        .tab-button:hover:not(.active) {
+            color: #fff; /* White color on hover for inactive tabs */
+            background-color: rgba(255, 255, 255, 0.1); /* Subtle highlight on hover */
+        }
+
+        /* Styling for tab content divs */
+        .tab-content {
+            padding-top: 1rem; /* Add space above content */
+            border-top: 1px solid #444; /* Separator line above content */
+            margin-top: -1px; /* Align with tab border */
+        }
+
+        /* Styling for the selected car display within the development tab */
+        #selected-car-display {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: #2a2a2a; /* Slightly different background */
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4); /* Inset shadow */
+            border: 1px solid #444;
+        }
+
+        #selected-car-display h4 {
+            margin-top: 0;
+            color: #ff8700; /* Orange title */
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        #selected-car-display ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #selected-car-display li {
+            margin-bottom: 0.5rem;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+
+        /* Styling for car upgrade options */
+         #car-upgrade-options-container {
+             margin-bottom: 2rem;
+         }
+         #car-upgrade-options-container h3 {
+              color: #ff8700;
+              margin-bottom: 1rem;
+              font-size: 1.2rem;
+              border-bottom: 1px dotted #555;
+              padding-bottom: 0.5rem;
+         }
+        #car-upgrade-options .card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start; /* Align items to the start */
+        }
+         #car-upgrade-options .card ul {
+             margin-bottom: 0.5rem; /* Reduce margin below list */
+         }
+         #car-upgrade-options .card button {
+             margin-top: 1rem; /* Ensure button has space */
+         }
+
+         /* Styling for season standings list items */
+          #season-info { /* Style the season info paragraph */
+                text-align: center;
+                margin-bottom: 1.5rem;
+                font-size: 1.1rem;
+                color: #ccc;
+          }
+          #season-standings-list-container h3 {
+             color: #ff8700;
+             margin-bottom: 1rem;
+             font-size: 1.2rem;
+         }
+         #season-standings-list {
+             list-style: none;
+             padding: 0;
+         }
+         #season-standings-list li {
+             display: flex;
+             /* justify-content: space-between; */ /* Adjusted for numbering */
+             align-items: center; /* Vertically align items */
+             padding: 0.6rem 0.5rem; /* Add padding */
+             border-bottom: 1px dotted #444;
+             font-size: 0.9rem;
+         }
+         #season-standings-list li:last-child {
+             border-bottom: none;
+         }
+         .position-number { /* Style for the position number */
+            font-weight: bold;
+            color: #ff8700;
+            min-width: 2.5em; /* Ensure alignment */
+            text-align: right;
+            margin-right: 0.8rem;
+         }
+         #season-standings-list li span:nth-child(2) { /* Driver name span */
+             /* font-weight: normal; Default already */
+             color: #ddd;
+             margin-right: 1rem;
+             flex-grow: 1; /* Allow name to take available space */
+         }
+          #season-standings-list li span:last-child { /* Points span */
+             font-weight: bold;
+             color: #fff; /* White for points */
+             min-width: 80px; /* Ensure alignment */
+             text-align: right;
+         }
+         /* Highlight player's team in standings */
+          #season-standings-list li.player-team span:nth-child(2) { /* Player driver name span */
+             color: #ffae42; /* Lighter orange for player team name */
+             font-weight: bold;
+         }
+
+
+         /* Styling for calendar list items */
+         #calendar-list-container h3 {
+              color: #ff8700;
+              margin-bottom: 1rem;
+              font-size: 1.2rem;
+         }
+         #calendar-list {
+             list-style: none;
+             padding: 0;
+         }
+         #calendar-list li {
+             padding: 0.8rem 0.5rem;
+             border-bottom: 1px dotted #444;
+             font-size: 0.9rem;
+         }
+         #calendar-list li:last-child {
+             border-bottom: none;
+         }
+         #calendar-list li.completed {
+             color: #888; /* Grey out completed races */
+         }
+         #calendar-list li.completed .race-details {
+             text-decoration: line-through; /* Strikethrough completed race details */
+             opacity: 0.7;
+         }
+         #calendar-list li.next-race {
+             font-weight: bold;
+             color: #ff8700; /* Highlight the next race */
+             background-color: rgba(255, 135, 0, 0.1);
+             border-left: 3px solid #ff8700;
+             padding-left: 1rem;
+             border-radius: 3px;
+         }
+         #calendar-list li ul { /* Styling for race details list */
+            list-style: none;
+            padding: 0.5rem 0 0 1rem; /* Indent details */
+            margin: 0;
+            font-size: 0.8rem; /* Smaller font for details */
+            color: #bbb; /* Lighter color for details */
+            font-weight: normal; /* Ensure details are normal weight */
+         }
+          #calendar-list li ul li {
+             padding: 0.1rem 0;
+             border: none; /* Remove borders within details */
+          }
+         .race-name {
+             font-weight: bold; /* Bold race name */
+             display: block; /* Make name take full line */
+             margin-bottom: 0.3rem;
+         }
+
+
+         /* Styling for opponent cars list */
+         #opponent-cars-list-container {
+             margin-top: 2rem;
+             border-top: 2px solid #ff8700; /* Separator line */
+             padding-top: 1.5rem;
+         }
+         #opponent-cars-list-container h3 {
+             margin-bottom: 1rem;
+             color: #ff8700;
+             text-shadow: 0 0 5px rgba(255, 135, 0, 0.5);
+             font-size: 1.2rem;
+         }
+          #opponent-cars-list-container h3 small { /* Style for the sub-text in h3 */
+              font-size: 0.8rem;
+              color: #bbb;
+              font-weight: normal;
+              margin-left: 10px;
+          }
+         #opponent-cars-list .card {
+             background-color: #1a1a1a; /* Slightly darker for opponent cars */
+             opacity: 0.8; /* Make opponent cars slightly less prominent */
+         }
+
+
+        /* Responsive styles for smaller screens */
+        @media (max-width: 768px) {
+            body {
+                 align-items: flex-start; /* Align to top on small screens */
+            }
+            #app {
+                width: 100%; /* Full width on small screens */
+                padding: 10px; /* Reduced padding */
+                border-radius: 0; /* No border-radius on small screens */
+                margin-top: 60px; /* Adjust margin for budget display */
+                box-shadow: none; /* No shadow on small screens */
+            }
+            #budget-display {
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
+             /* Adjust race button padding on small screens */
+            #race-button {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+                 max-width: 90%; /* Wider button on small screens */
+            }
+            /* Single column grid for all lists on small screens */
+            #initial-budget-selection, #ecurie-selection, #drivers-list, #cars-list, #car-upgrade-options, #season-standings-list, #calendar-list, #opponent-cars-list, #drivers-list-management {
+                grid-template-columns: 1fr;
+            }
+            .card {
+                padding: 1rem;
+            }
+             .card button {
+                font-size: 0.8rem;
+                 padding: 0.6rem 1rem;
+            }
+            h1{
+                font-size: 1.6rem; /* Smaller title */
+            }
+            h2{
+                font-size: 1.1rem; /* Smaller section titles */
+            }
+             /* Adjust tab button padding and font size on small screens */
+            .tabs {
+                 margin-bottom: 1rem;
+            }
+            .tab-button {
+                padding: 0.6rem 0.5rem; /* Reduced padding */
+                font-size: 0.8rem; /* Smaller font */
+                flex-basis: 33%; /* Roughly 3 tabs per row */
+            }
+            #race-results ol li {
+                 font-size: 0.9rem;
+            }
+             #race-results ol li::before {
+                 margin-right: 0.5rem;
+                 min-width: 1.5em;
+             }
+             #season-info { font-size: 1rem; }
+             .position-number { min-width: 2em; margin-right: 0.5rem;}
+            .message-box {
+                 width: 90%;
+                 font-size: 0.8rem;
+                 padding: 0.8rem 1rem;
+                 top: 70px; /* Adjust position */
+            }
+        }
+         @media (max-width: 480px) {
+              h1 { font-size: 1.4rem; }
+              h2 { font-size: 1rem; }
+              .tab-button { flex-basis: 50%; font-size: 0.7rem; } /* 2 tabs per row */
+              .card h3 { font-size: 1rem; }
+              .card li { font-size: 0.8rem; }
+              #budget-display { font-size: 0.8rem; }
+              #race-button { font-size: 0.8rem; }
+              #season-info { font-size: 0.9rem; }
+              #season-standings-list li { font-size: 0.8rem; }
+              .position-number { font-size: 0.8rem; min-width: 1.8em;}
+              #season-standings-list li span:last-child { min-width: 60px; font-size: 0.8rem;}
+              #calendar-list li { font-size: 0.8rem; }
+         }
+
+    </style>
+</head>
+<body>
+    <!-- Budget Display - Stays outside #app for fixed positioning -->
+    <div id="budget-display">Budget: $0</div>
+
+    <div id="app">
+        <h1>F1 Team Manager</h1>
+
+        <!-- Initial Setup Screens -->
+        <div id="initial-budget-selection">
+             <!-- Content generated by JS -->
+        </div>
+
+        <div id="ecurie-selection" style="display: none;">
+             <!-- Content generated by JS -->
+        </div>
+
+        <div id="initial-driver-selection" style="display: none;">
+             <h2 id="drivers-title">Select Your Two Drivers</h2>
+             <div id="drivers-list">
+                 <!-- Content generated by JS -->
+             </div>
+        </div>
+
+        <!-- Main Team Management Screen -->
+        <div id="team-management-screen" style="display: none;">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="development">Car Dev</button>
+                <button class="tab-button" data-tab="drivers">Drivers</button>
+                <button class="tab-button" data-tab="standings">Standings</button>
+                <button class="tab-button" data-tab="calendar">Calendar</button>
+                 <button class="tab-button" data-tab="race">Race HQ</button>
+            </div>
+
+             <!-- Development Tab -->
+            <div id="development-tab" class="tab-content">
+                <h2>Car Development</h2>
+                 <div id="selected-car-display">
+                     <!-- Content generated by JS -->
+                 </div>
+                 <div id="car-upgrade-options-container">
+                     <h3>Upgrade Options</h3>
+                     <div id="car-upgrade-options">
+                          <!-- Content generated by JS -->
+                     </div>
+                 </div>
+                 <div id="opponent-cars-list-container">
+                      <h3>Opponent Cars <small>(Upgrades from last race shown in <span class="stat-increase">green</span>)</small></h3>
+                     <div id="opponent-cars-list">
+                         <!-- Content generated by JS -->
+                     </div>
+                 </div>
+            </div>
+
+             <!-- Drivers Tab -->
+             <div id="drivers-tab" class="tab-content" style="display: none;">
+                <h2>Your Drivers</h2>
+                <p>Your selected drivers are highlighted below. You cannot change drivers mid-season in this version.</p>
+                <div id="drivers-list-management">
+                     <!-- Content generated by JS -->
+                 </div>
+            </div>
+
+            <!-- Standings Tab -->
+            <div id="standings-tab" class="tab-content" style="display: none;">
+                <h2>Season Standings</h2>
+                <p id="season-info">Season Info Placeholder</p> <!-- Updated by JS -->
+                <div id="season-standings-list-container">
+                     <!-- <h3>Driver Standings</h3> No longer needed? h2 serves as title -->
+                     <ul id="season-standings-list">
+                         <!-- Content generated by JS -->
+                     </ul>
+                 </div>
+            </div>
+
+             <!-- Calendar Tab -->
+             <div id="calendar-tab" class="tab-content" style="display: none;">
+                <h2>Race Calendar</h2>
+                 <p id="calendar-info">Calendar Info Placeholder</p> <!-- Updated by JS -->
+                  <div id="calendar-list-container">
+                       <!-- <h3>Schedule</h3> No longer needed? h2 serves as title -->
+                     <ul id="calendar-list">
+                         <!-- Content generated by JS -->
+                     </ul>
+                 </div>
+            </div>
+
+            <!-- Race Tab -->
+            <div id="race-tab" class="tab-content" style="display: none;">
+                 <h2>Race HQ</h2>
+                 <div id="visual-simulation-placeholder">
+                     <p>Next Race Information / Visual Placeholder</p>
+                     <p>Click the button below to simulate the next race.</p>
+                     <p>NOTE: Race result calculation logic has been removed. Points & Prize Money awarded based on random order.</p>
+                 </div>
+                 <button id="race-button">Simulate Next Race</button>
+                 <div id="race-results" style="display: none;">
+                     <h3>Last Race Results</h3>
+                     <ol> <!-- Results list --> </ol>
+                     <p id="race-message">Race statistics will appear here.</p>
+                      <div id="prize-money-earned">
+                           <h4>Prize Money Earned (Player):</h4> <!-- Clarified title -->
+                           <ul> <!-- Prize breakdown --> </ul>
+                           <p>Total Earned: $0</p> <!-- Updated label -->
+                      </div>
+                 </div>
+            </div>
+        </div>
+
+         <!-- Message Box for Notifications -->
+         <div id="message-box" class="message-box"></div>
+    </div>
+
+    <script>
+        // --- Data Arrays ---
+        const ecuries = [
+            { id: 1, name: 'Mercedes', cost: 200000000, defaultCarId: 1, driverIds: [1, 6] },
+            { id: 2, name: 'Red Bull', cost: 180000000, defaultCarId: 2, driverIds: [2, 7] },
+            { id: 3, name: 'Ferrari', cost: 170000000, defaultCarId: 3, driverIds: [3, 5] },
+            { id: 4, name: 'McLaren', cost: 150000000, defaultCarId: 4, driverIds: [4, 19] },
+            { id: 5, name: 'Alpine', cost: 140000000, defaultCarId: 5, driverIds: [9, 10] },
+            { id: 6, name: 'Aston Martin', cost: 160000000, defaultCarId: 6, driverIds: [8, 14] },
+            { id: 7, name: 'Alfa Romeo', cost: 120000000, defaultCarId: 7, driverIds: [11, 15] },
+            { id: 8, name: 'Haas', cost: 110000000, defaultCarId: 8, driverIds: [16, 17] },
+            { id: 9, name: 'AlphaTauri', cost: 130000000, defaultCarId: 9, driverIds: [18, 13] },
+            { id: 10, name: 'Williams', cost: 100000000, defaultCarId: 10, driverIds: [12, 20] },
+        ];
+
+        const cars = [
+            { id: 1, name: 'W14', speed: 95, handling: 94, reliability: 92, cost: 0 },
+            { id: 2, name: 'RB19', speed: 96, handling: 93, reliability: 94, cost: 0 },
+            { id: 3, name: 'SF23', speed: 94, handling: 95, reliability: 90, cost: 0 },
+            { id: 4, name: 'MCL60', speed: 93, handling: 92, reliability: 93, cost: 0 },
+            { id: 5, name: 'A523', speed: 92, handling: 91, reliability: 91, cost: 0 },
+            { id: 6, name: 'AMR23', speed: 94, handling: 92, reliability: 92, cost: 0 },
+            { id: 7, name: 'C43', speed: 90, handling: 89, reliability: 90, cost: 0 },
+            { id: 8, name: 'VF-23', speed: 88, handling: 87, reliability: 88, cost: 0 },
+            { id: 9, name: 'AT04', speed: 89, handling: 88, reliability: 89, cost: 0 },
+            { id: 10, name: 'FW45', speed: 87, handling: 86, reliability: 87, cost: 0 },
+        ];
+
+         const upgrades = [
+             { id: 1, name: 'Engine Mk II', cost: 50000000, effect: { stat: 'speed', value: 5 } },
+             { id: 2, name: 'Aero Package Alpha', cost: 40000000, effect: { stat: 'handling', value: 5 } },
+             { id: 3, name: 'Reliability Boost', cost: 30000000, effect: { stat: 'reliability', value: 5 } },
+             { id: 4, name: 'Brakes Upgrade', cost: 25000000, effect: { stat: 'handling', value: 3 } },
+             { id: 5, name: 'Lightweight Chassis', cost: 60000000, effect: { stat: 'speed', value: 4 } },
+             { id: 6, name: 'Suspension Tuning', cost: 35000000, effect: { stat: 'handling', value: 4 } },
+             { id: 7, name: 'Cooling System V2', cost: 20000000, effect: { stat: 'reliability', value: 4 } },
+         ];
+
+        const drivers = [
+            { id: 1, name: 'L. Hamilton', skill: 95, cost: 25000000, teamId: 1 },
+            { id: 2, name: 'M. Verstappen', skill: 96, cost: 26000000, teamId: 2 },
+            { id: 3, name: 'C. Leclerc', skill: 94, cost: 22000000, teamId: 3 },
+            { id: 4, name: 'L. Norris', skill: 93, cost: 20000000, teamId: 4 },
+            { id: 5, name: 'C. Sainz', skill: 91, cost: 18000000, teamId: 3 },
+            { id: 6, name: 'G. Russell', skill: 92, cost: 19000000, teamId: 1 },
+            { id: 7, name: 'S. Perez', skill: 89, cost: 17000000, teamId: 2 },
+            { id: 8, name: 'F. Alonso', skill: 90, cost: 18000000, teamId: 6 },
+            { id: 9, name: 'P. Gasly', skill: 87, cost: 14000000, teamId: 5 },
+            { id: 10, name: 'E. Ocon', skill: 86, cost: 13000000, teamId: 5 },
+            { id: 11, name: 'V. Bottas', skill: 88, cost: 15000000, teamId: 7 },
+            { id: 12, name: 'A. Albon', skill: 85, cost: 12000000, teamId: 10 },
+            { id: 13, name: 'D. Ricciardo', skill: 84, cost: 11000000, teamId: 9 },
+            { id: 14, name: 'L. Stroll', skill: 82, cost: 10000000, teamId: 6 },
+            { id: 15, name: 'Z. Guanyu', skill: 81, cost: 9000000, teamId: 7 },
+            { id: 16, name: 'K. Magnussen', skill: 83, cost: 10500000, teamId: 8 },
+            { id: 17, name: 'N. Hulkenberg', skill: 84, cost: 11000000, teamId: 8 },
+            { id: 18, name: 'Y. Tsunoda', skill: 80, cost: 8500000, teamId: 9 },
+            { id: 19, name: 'O. Piastri', skill: 86, cost: 12000000, teamId: 4 },
+            { id: 20, name: 'L. Sargeant', skill: 79, cost: 7000000, teamId: 10 },
+        ];
+
+        const races = [
+             { id: 1, name: 'Bahrain GP', length: 308.238, laps: 57, speed: 85, handling: 85, reliability: 85 },
+            { id: 2, name: 'Saudi Arabia GP', length: 308.450, laps: 50, speed: 95, handling: 80, reliability: 80 },
+            { id: 3, name: 'Australia GP', length: 307.574, laps: 58, speed: 90, handling: 90, reliability: 80 },
+            { id: 4, name: 'Azerbaijan GP', length: 306.049, laps: 51, speed: 100, handling: 75, reliability: 75 },
+            { id: 5, name: 'Miami GP', length: 308.326, laps: 57, speed: 85, handling: 90, reliability: 80 },
+            { id: 7, name: 'Monaco GP', length: 260.286, laps: 78, speed: 60, handling: 100, reliability: 70 },
+            { id: 8, name: 'Spain GP', length: 307.237, laps: 66, speed: 85, handling: 90, reliability: 80 },
+            { id: 9, name: 'Canada GP', length: 305.270, laps: 70, speed: 90, handling: 85, reliability: 80 },
+            { id: 10, name: 'Austria GP', length: 306.452, laps: 71, speed: 90, handling: 85, reliability: 85 },
+            { id: 11, name: 'Great Britain GP', length: 306.198, laps: 52, speed: 92, handling: 92, reliability: 78 },
+            { id: 12, name: 'Hungary GP', length: 306.630, laps: 70, speed: 75, handling: 95, reliability: 80 },
+            { id: 13, name: 'Belgium GP', length: 308.052, laps: 44, speed: 98, handling: 70, reliability: 80 },
+            { id: 14, name: 'Netherlands GP', length: 305.876, laps: 72, speed: 70, handling: 98, reliability: 80 },
+            { id: 15, name: 'Italy GP', length: 306.720, laps: 53, speed: 100, handling: 65, reliability: 80 },
+            { id: 16, name: 'Singapore GP', length: 306.320, laps: 62, speed: 80, handling: 95, reliability: 85 },
+            { id: 17, name: 'Japan GP', length: 307.471, laps: 53, speed: 92, handling: 90, reliability: 78 },
+            { id: 18, name: 'Qatar GP', length: 306.660, laps: 57, speed: 95, handling: 85, reliability: 80 },
+            { id: 19, name: 'USA GP', length: 308.405, laps: 56, speed: 88, handling: 90, reliability: 82 },
+            { id: 20, name: 'Mexico GP', length: 305.584, laps: 71, speed: 90, handling: 85, reliability: 85 },
+            { id: 21, name: 'Brazil GP', length: 305.909, laps: 71, speed: 88, handling: 88, reliability: 82 },
+            { id: 22, name: 'Las Vegas GP', length: 310.000, laps: 50, speed: 95, handling: 80, reliability: 80 },
+            { id: 23, name: 'Abu Dhabi GP', length: 305.355, laps: 58, speed: 85, handling: 85, reliability: 85 },
+        ];
+
+        const pointsSystem = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+
+        // REMOVED old prizeMoney array
+        // const prizeMoney = [ ... ];
+
+        const budgetOptions = [
+            { amount: 200000000, name: 'Challenger ($200M)' },
+            { amount: 275000000, name: 'Midfield ($275M)' },
+            { amount: 350000000, name: 'Top Team ($350M)' },
+        ];
+
+        // --- Global State Variables ---
+        let teamName = '';
+        let selectedEcurieId = null;
+        let selectedDriverIds = [];
+        let selectedCar = null;
+        let budget = 0;
+        let purchasedUpgrades = {}; // Player upgrades { upgradeId: true }
+        let driverSeasonScores = {}; // { driverId: points }
+        const currentSeasonYear = 2024; // Define the season year
+        const totalRacesInSeason = races.length;
+        let currentRaceIndex = 0;
+        let currentDrivers = JSON.parse(JSON.stringify(drivers));
+        let currentCars = JSON.parse(JSON.stringify(cars));
+        let aiTeamBudgets = {}; // AI budgets { teamId: budgetAmount }
+        let aiTeamUpgrades = {}; // AI purchased upgrades { teamId: { upgradeId: true, ... } }
+        let lastAIRaceUpgrades = {}; // Visual indicator { carId: { stat: 'speed', change: 5 } }
+
+        // --- Helper Functions ---
+
+        function showMessage(message, type = 'info', duration = 3000) {
+            const messageBox = document.getElementById('message-box');
+            if (!messageBox) return;
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type}`;
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, duration);
+        }
+
+        // --- RACE CALCULATION FUNCTIONS REMOVED ---
+
+        function sortRaceResults(results) {
+            // Using shuffle for placeholder order as performance calculation is removed
+            shuffleArray(results);
+            return results;
+        }
+
+        function formatNumber(number) {
+            return number.toLocaleString('en-US');
+        }
+
+        function getTeamById(teamId) {
+             return ecuries.find(team => team.id === teamId);
+        }
+
+        function getDriverById(driverId) {
+             return currentDrivers.find(driver => driver.id === driverId);
+        }
+
+        function getCarById(carId) {
+             return currentCars.find(car => car.id === carId);
+        }
+
+        function shuffleArray(array) {
+             for (let i = array.length - 1; i > 0; i--) {
+                 const j = Math.floor(Math.random() * (i + 1));
+                 [array[i], array[j]] = [array[j], array[i]];
+             }
+         }
+
+         function getOrdinalSuffix(n) {
+            const s = ["th", "st", "nd", "rd"],
+                  v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+
+
+        // --- UI Rendering Functions ---
+
+        function renderBudgetSelection() {
+            const budgetSelectionDiv = document.getElementById('initial-budget-selection');
+            if (!budgetSelectionDiv) return;
+            let html = '<h2>Select Your Starting Budget</h2>';
+            budgetOptions.forEach(option => {
+                html += `
+                    <div class="card">
+                        <h3>${option.name}</h3>
+                        <ul>
+                             <li>Amount: $${formatNumber(option.amount)}</li>
+                        </ul>
+                        <button data-budget-amount="${option.amount}">Select Budget</button>
+                    </div>
+                `;
+            });
+            budgetSelectionDiv.innerHTML = html;
+            budgetSelectionDiv.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', () => {
+                    handleBudgetSelection(parseInt(button.dataset.budgetAmount));
+                });
+            });
+        }
+
+
+        function renderEcurieSelection() {
+            const ecurieSelectionDiv = document.getElementById('ecurie-selection');
+            if (!ecurieSelectionDiv) return;
+            let html = '<h2>Select Your Team</h2>';
+            ecuries.forEach(ecurie => {
+                const canAfford = budget >= ecurie.cost;
+                html += `
+                    <div class="card ${!canAfford ? 'disabled' : ''}">
+                        <h3>${ecurie.name}</h3>
+                        <ul>
+                            <li>Cost: $${formatNumber(ecurie.cost)}</li>
+                        </ul>
+                        <button data-ecurie-id="${ecurie.id}" ${!canAfford ? 'disabled' : ''}>
+                             ${canAfford ? 'Select Team' : 'Insufficient Funds'}
+                        </button>
+                    </div>
+                `;
+            });
+            ecurieSelectionDiv.innerHTML = html;
+            ecurieSelectionDiv.querySelectorAll('button').forEach(button => {
+                 if (!button.disabled) {
+                     button.addEventListener('click', () => {
+                         handleEcurieSelection(parseInt(button.dataset.ecurieId));
+                     });
+                 }
+            });
+        }
+
+        function renderDriversList(containerId, isInitialSelection = false) {
+            const driversListDiv = document.getElementById(containerId);
+            if (!driversListDiv) return;
+            let html = '';
+            const twoDriversSelected = selectedDriverIds.length === 2;
+
+            currentDrivers.forEach(driver => {
+                const isSelected = selectedDriverIds.includes(driver.id);
+                // Display original team only if it's not the player's driver during initial selection
+                const originalTeam = ecuries.find(e => e.driverIds.includes(driver.id));
+                const teamNameDisplay = (!isSelected && isInitialSelection && originalTeam) ? ` (${originalTeam.name})` : '';
+                const isDisabled = isInitialSelection && !isSelected && twoDriversSelected;
+                const canAfford = budget >= driver.cost || isSelected;
+
+                html += `
+                    <div class="card ${ (isInitialSelection && (!canAfford || isDisabled)) ? 'disabled' : ''} ${isSelected ? 'player-team' : ''}">
+                        <h3>${driver.name}${teamNameDisplay}</h3>
+                        <ul>
+                            <li ${isSelected && !isInitialSelection ? 'class="selected-driver"' : ''}>Skill: ${driver.skill}</li>
+                            <li>Cost: $${formatNumber(driver.cost)}</li>
+                        </ul>
+                        ${isInitialSelection ?
+                            `<button data-driver-id="${driver.id}" ${isDisabled || !canAfford ? 'disabled' : ''}>
+                                ${isSelected ? 'Deselect' : (twoDriversSelected ? 'Team Full' : (!canAfford ? 'Cannot Afford' : 'Select Driver'))}
+                            </button>`
+                            : ''
+                        }
+                    </div>
+                `;
+            });
+            driversListDiv.innerHTML = html;
+
+            if (isInitialSelection) {
+                 driversListDiv.querySelectorAll('button').forEach(button => {
+                     if (!button.disabled) {
+                         button.addEventListener('click', () => {
+                             handleDriverSelection(parseInt(button.dataset.driverId));
+                         });
+                     }
+                 });
+            }
+        }
+
+
+        function renderCarsAndDevelopment() {
+            const selectedCarDisplay = document.getElementById('selected-car-display');
+            const opponentCarsListDiv = document.getElementById('opponent-cars-list');
+
+            // Render Player Car
+            if (selectedCarDisplay && selectedCar) {
+                 const playerTeam = getTeamById(selectedEcurieId);
+                 const teamCarName = playerTeam ? `${playerTeam.name}'s ${selectedCar.name}` : `Your ${selectedCar.name}`;
+                selectedCarDisplay.innerHTML = `
+                    <h4>${teamCarName}</h4>
+                    <ul>
+                        <li>Speed: ${selectedCar.speed}</li>
+                        <li>Handling: ${selectedCar.handling}</li>
+                        <li>Reliability: ${selectedCar.reliability}</li>
+                    </ul>
+                `;
+            } else if (selectedCarDisplay) {
+                 selectedCarDisplay.innerHTML = `<h4>No car assigned yet.</h4>`;
+            }
+
+            // Render Player Upgrade Options
+            renderCarUpgradeOptions();
+
+            // Render Opponent Cars (which now includes budget and visual indicator)
+            if (opponentCarsListDiv) {
+                 renderOpponentCars(opponentCarsListDiv);
+            }
+        }
+
+        function renderCarUpgradeOptions() {
+            const upgradeOptionsDiv = document.getElementById('car-upgrade-options');
+            if (!upgradeOptionsDiv) return;
+            let html = '';
+            if (selectedCar === null) {
+                 html = '<p>Select your team and drivers first.</p>';
+                 upgradeOptionsDiv.innerHTML = html; return;
+            }
+            upgrades.forEach(upgrade => {
+                const isPurchased = purchasedUpgrades[upgrade.id];
+                const canAfford = budget >= upgrade.cost;
+                const isDisabled = isPurchased || !canAfford;
+                html += `
+                    <div class="card ${isDisabled ? 'disabled' : ''}">
+                        <h3>${upgrade.name}</h3>
+                        <ul>
+                            <li>Cost: $${formatNumber(upgrade.cost)}</li>
+                            <li>Effect: +${upgrade.effect.value} ${upgrade.effect.stat}</li>
+                        </ul>
+                        <button data-upgrade-id="${upgrade.id}" ${isDisabled ? 'disabled' : ''}>
+                            ${isPurchased ? 'Purchased' : (canAfford ? 'Purchase' : 'Insufficient Funds')}
+                        </button>
+                    </div>
+                `;
+            });
+            upgradeOptionsDiv.innerHTML = html;
+            upgradeOptionsDiv.querySelectorAll('button').forEach(button => {
+                if (!button.disabled) {
+                    button.addEventListener('click', () => {
+                        handleCarUpgrade(parseInt(button.dataset.upgradeId));
+                    });
+                }
+            });
+        }
+
+        // Updated to show AI budget and recent upgrade indicator
+        function renderOpponentCars(containerDiv) {
+             let html = '';
+            ecuries.forEach(ecurie => {
+                if (ecurie.id !== selectedEcurieId) { // Only opponent teams
+                    const opponentCar = getCarById(ecurie.defaultCarId);
+                    if (opponentCar) {
+                        // Check for recent upgrade visual indicator
+                        const upgradeInfo = lastAIRaceUpgrades[opponentCar.id];
+                        // Get AI team budget
+                        const currentAIBudget = aiTeamBudgets[ecurie.id] || 0; // Default to 0 if not set
+
+                        html += `
+                            <div class="card disabled">
+                                <h3>${ecurie.name}'s ${opponentCar.name}</h3>
+                                <ul>
+                                    <li>Budget: $${formatNumber(currentAIBudget)}</li>
+                                    <li>Speed: ${opponentCar.speed} ${upgradeInfo && upgradeInfo.stat === 'speed' ? `<span class="stat-increase">(+${upgradeInfo.change})</span>` : ''}</li>
+                                    <li>Handling: ${opponentCar.handling} ${upgradeInfo && upgradeInfo.stat === 'handling' ? `<span class="stat-increase">(+${upgradeInfo.change})</span>` : ''}</li>
+                                    <li>Reliability: ${opponentCar.reliability} ${upgradeInfo && upgradeInfo.stat === 'reliability' ? `<span class="stat-increase">(+${upgradeInfo.change})</span>` : ''}</li>
+                                </ul>
+                            </div>
+                        `;
+                    }
+                }
+            });
+             containerDiv.innerHTML = html;
+        }
+
+
+        // Updated to add position numbers and season info
+        function renderSeasonStandings() {
+            const standingsList = document.getElementById('season-standings-list');
+            const seasonInfo = document.getElementById('season-info');
+            if (!standingsList || !seasonInfo) return;
+            standingsList.innerHTML = '';
+
+            // Update Season Info Text
+            if (currentRaceIndex === 0) {
+                seasonInfo.textContent = `${currentSeasonYear} Season - Pre-Season`;
+            } else if (currentRaceIndex >= totalRacesInSeason) {
+                 seasonInfo.textContent = `${currentSeasonYear} Season - Final Standings`;
+            } else {
+                // Display current race number accurately (currentRaceIndex is 0-based for arrays)
+                 seasonInfo.textContent = `${currentSeasonYear} Season - After Race ${currentRaceIndex} / ${totalRacesInSeason}`;
+            }
+
+            // Get and sort driver scores
+            const driverScoresArray = Object.keys(driverSeasonScores).map(driverId => {
+                const driver = getDriverById(parseInt(driverId));
+                 return driver ? { driver: driver, points: driverSeasonScores[driverId] || 0 } : null;
+            }).filter(item => item !== null);
+
+            driverScoresArray.sort((a, b) => b.points - a.points || a.driver.name.localeCompare(b.driver.name));
+
+             // Render numbered list
+             let html = '';
+            driverScoresArray.forEach((item, index) => {
+                 const position = index + 1;
+                 const isPlayerDriver = selectedDriverIds.includes(item.driver.id);
+                 const team = getTeamById(item.driver.teamId); // Use current driver teamId
+                 const teamNameDisplay = team ? ` (${team.name})` : '';
+                html += `
+                    <li class="${isPlayerDriver ? 'player-team' : ''}">
+                        <span class="position-number">${position}.</span>
+                        <span>${item.driver.name}${teamNameDisplay}</span>
+                        <span>${item.points} Pts</span>
+                    </li>
+                `;
+            });
+            standingsList.innerHTML = html;
+        }
+
+        function renderCalendar() {
+            const calendarList = document.getElementById('calendar-list');
+            const calendarInfo = document.getElementById('calendar-info');
+             if (!calendarList || !calendarInfo) return;
+            calendarList.innerHTML = '';
+            calendarInfo.textContent = `${currentSeasonYear} Race Schedule: ${currentRaceIndex}/${totalRacesInSeason} completed.`; // Added year
+             let html = '';
+            races.forEach((race, index) => {
+                 const isCompleted = index < currentRaceIndex;
+                 const isNextRace = index === currentRaceIndex;
+                 const listItemClass = `${isCompleted ? 'completed' : ''} ${isNextRace ? 'next-race' : ''}`;
+                html += `
+                    <li class="${listItemClass.trim()}">
+                         <span class="race-name">${index + 1}. ${race.name}</span>
+                         <ul class="race-details">
+                             <li>Track Type: ${getTrackType(race)}</li>
+                            <li>Key Stats: Spd ${race.speed} / Hnd ${race.handling} / Rel ${race.reliability}</li>
+                        </ul>
+                    </li>
+                `;
+            });
+            calendarList.innerHTML = html;
+        }
+
+        function getTrackType(race) {
+            if (race.speed > 95) return "High Speed";
+            if (race.handling > 95) return "High Handling";
+            if (race.speed > 90 && race.handling < 80) return "Speed Focused";
+            if (race.handling > 90 && race.speed < 80) return "Handling Focused";
+            if (race.speed > 85 && race.handling > 85) return "Balanced";
+            return "Mixed";
+        }
+
+        // Updated to display prize money based on new system
+        function renderRaceResults(results, raceName, totalPrizeMoneyEarnedPlayer) {
+            const raceResultsElement = document.getElementById('race-results');
+            const resultsListElement = raceResultsElement?.querySelector('ol');
+            const raceMessageElement = raceResultsElement?.querySelector('#race-message');
+            const prizeMoneyListElement = raceResultsElement?.querySelector('#prize-money-earned ul');
+            const prizeMoneyTotalElement = raceResultsElement?.querySelector('#prize-money-earned p');
+
+             if (!raceResultsElement || !resultsListElement || !raceMessageElement || !prizeMoneyListElement || !prizeMoneyTotalElement) return;
+
+            resultsListElement.innerHTML = '';
+            raceResultsElement.querySelector('h3').textContent = `Results: ${raceName}`;
+
+             let resultsHtml = '';
+            results.forEach((result, index) => {
+                 const isPlayerDriver = selectedDriverIds.includes(result.driver.id);
+                 const team = getTeamById(result.driver.teamId);
+                 const teamNameShort = team ? ` (${team.name.substring(0,3).toUpperCase()})` : '';
+                 let resultText = `${result.driver.name}${teamNameShort}`;
+                 if (index < pointsSystem.length) {
+                     resultText += ` (+${pointsSystem[index]} pts)`;
+                 }
+                 resultsHtml += `<li class="${isPlayerDriver ? 'player-driver' : ''}">${resultText}</li>`;
+            });
+            resultsListElement.innerHTML = resultsHtml;
+
+            raceMessageElement.textContent = `Race finished. Order displayed is placeholder. Points & Prize Money awarded based on this order.`;
+
+            // Display player prize money breakdown based on new system
+            let prizeMoneyHtml = '';
+            results.forEach((result, index) => {
+                 if (selectedDriverIds.includes(result.driver.id)) {
+                     const position = index + 1;
+                     let moneyFromPoints = 0;
+                     let moneyFromBonus = 0;
+                     let breakdownText = '';
+
+                     // Calculate points money
+                     if (index < pointsSystem.length) {
+                         moneyFromPoints = pointsSystem[index] * 300000;
+                     }
+                     // Calculate top 3 bonus
+                     if (index < 3) {
+                         moneyFromBonus = 1000000;
+                     }
+
+                     // Create breakdown string only if money was earned
+                     if (moneyFromPoints > 0 || moneyFromBonus > 0) {
+                         breakdownText = `$${formatNumber(moneyFromPoints)} (Points)`;
+                         if (moneyFromBonus > 0) {
+                             breakdownText += ` + $${formatNumber(moneyFromBonus)} (Top 3)`;
+                         }
+                         prizeMoneyHtml += `<li>${result.driver.name} (${getOrdinalSuffix(position)}): ${breakdownText}</li>`;
+                     }
+                 }
+            });
+
+             if (prizeMoneyHtml === '') {
+                 prizeMoneyHtml = '<li>No prize money earned this race.</li>';
+             }
+             prizeMoneyListElement.innerHTML = prizeMoneyHtml;
+             // Display total player prize money earned in THIS race
+             prizeMoneyTotalElement.textContent = `Total Earned: $${formatNumber(totalPrizeMoneyEarnedPlayer)}`;
+
+
+            raceResultsElement.style.display = 'block';
+        }
+
+        // Updated to initialize AI budgets and upgrades
+        function initializeGameAfterSetup() {
+             // Assign player drivers to player team
+             const playerTeam = getTeamById(selectedEcurieId);
+             const playerDriver1 = getDriverById(selectedDriverIds[0]);
+             const playerDriver2 = getDriverById(selectedDriverIds[1]);
+             if (playerDriver1) playerDriver1.teamId = selectedEcurieId;
+             if (playerDriver2) playerDriver2.teamId = selectedEcurieId;
+             if (playerTeam) playerTeam.driverIds = selectedDriverIds;
+
+             // Initialize AI states
+             aiTeamBudgets = {};
+             aiTeamUpgrades = {};
+             ecuries.forEach(team => {
+                 if (team.id !== selectedEcurieId) { // If it's an AI team
+                     // Assign their default drivers (make sure they are not player drivers)
+                     team.driverIds.forEach(driverId => {
+                         const driver = getDriverById(driverId);
+                         if (driver && !selectedDriverIds.includes(driverId)) {
+                             driver.teamId = team.id;
+                         }
+                     });
+                     // Initialize budget and upgrades
+                     aiTeamBudgets[team.id] = 0; // Start AI with 0 budget
+                     aiTeamUpgrades[team.id] = {};
+                 }
+             });
+             console.log("Drivers assigned to teams.");
+             console.log("AI Budgets Initialized:", aiTeamBudgets);
+             console.log("AI Upgrades Initialized:", aiTeamUpgrades);
+
+             // Initialize player season scores etc.
+             driverSeasonScores = {};
+             currentDrivers.forEach(driver => {
+                driverSeasonScores[driver.id] = 0;
+            });
+            currentRaceIndex = 0;
+            purchasedUpgrades = {};
+            lastAIRaceUpgrades = {};
+
+             // UI Updates
+             document.getElementById('initial-budget-selection').style.display = 'none';
+            document.getElementById('ecurie-selection').style.display = 'none';
+            document.getElementById('initial-driver-selection').style.display = 'none';
+            document.getElementById('team-management-screen').style.display = 'block';
+
+            const raceButton = document.getElementById('race-button');
+            raceButton.disabled = false;
+            raceButton.textContent = `Simulate: ${races[currentRaceIndex].name}`;
+
+            activateTab('development'); // Activate default tab
+            // Render initial state of tabs
+            renderCarsAndDevelopment();
+            renderDriversList('drivers-list-management', false);
+            renderSeasonStandings();
+            renderCalendar();
+
+             // Add race button listener only once
+             const raceButtonEventListener = raceButton.getAttribute('data-listener');
+             if (!raceButtonEventListener) {
+                 raceButton.addEventListener('click', handleSimulateNextRace);
+                 raceButton.setAttribute('data-listener', 'true');
+             }
+        }
+
+
+        // --- Tab Switching Logic ---
+        function setupTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    activateTab(button.dataset.tab);
+                });
+            });
+        }
+
+        function activateTab(targetTab) {
+             const tabButtons = document.querySelectorAll('.tab-button');
+             const tabContents = document.querySelectorAll('.tab-content');
+             tabButtons.forEach(btn => btn.classList.remove('active'));
+             tabContents.forEach(content => content.style.display = 'none');
+             const activeButton = document.querySelector(`.tab-button[data-tab="${targetTab}"]`);
+             const activeContent = document.getElementById(`${targetTab}-tab`);
+             if (activeButton) activeButton.classList.add('active');
+             if (activeContent) activeContent.style.display = 'block';
+
+             // Re-render relevant tabs when switched to, ensuring data freshness
+             if (targetTab === 'development') renderCarsAndDevelopment();
+             if (targetTab === 'drivers') renderDriversList('drivers-list-management', false);
+             if (targetTab === 'standings') renderSeasonStandings();
+             if (targetTab === 'calendar') renderCalendar();
+             if (targetTab === 'race') {
+                 const raceButton = document.getElementById('race-button');
+                 if (currentRaceIndex < totalRacesInSeason) {
+                     raceButton.textContent = `Simulate: ${races[currentRaceIndex].name}`;
+                     raceButton.disabled = false;
+                 } else {
+                     raceButton.textContent = 'Season Finished';
+                     raceButton.disabled = true;
+                 }
+             }
+        }
+
+
+        // --- Event Handlers ---
+
+        function handleBudgetSelection(amount) {
+            budget = amount;
+            document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`;
+            showMessage(`Budget set to $${formatNumber(amount)}`, 'success', 2000);
+            document.getElementById('initial-budget-selection').style.display = 'none';
+            document.getElementById('ecurie-selection').style.display = 'block';
+            renderEcurieSelection();
+        }
+
+
+        function handleEcurieSelection(ecurieId) {
+            const selectedEcurie = ecuries.find(e => e.id === ecurieId);
+            if (!selectedEcurie) return;
+            if (budget < selectedEcurie.cost) {
+                showMessage("Insufficient funds for this team.", 'error'); return;
+            }
+            selectedEcurieId = ecurieId;
+            budget -= selectedEcurie.cost;
+            teamName = selectedEcurie.name;
+            document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`;
+            selectedCar = getCarById(selectedEcurie.defaultCarId); // Get the mutable car object
+            showMessage(`${selectedEcurie.name} selected! Cost: $${formatNumber(selectedEcurie.cost)}`, 'success');
+            document.getElementById('ecurie-selection').style.display = 'none';
+            document.getElementById('initial-driver-selection').style.display = 'block';
+            document.getElementById('drivers-title').textContent = `Select Two Drivers for ${teamName}`;
+            renderDriversList('drivers-list', true);
+        }
+
+        function handleDriverSelection(driverId) {
+            const driverToSelect = getDriverById(driverId);
+            if (!driverToSelect) return;
+            const isSelected = selectedDriverIds.includes(driverId);
+
+            if (isSelected) {
+                selectedDriverIds = selectedDriverIds.filter(id => id !== driverId);
+                budget += driverToSelect.cost;
+                showMessage(`${driverToSelect.name} deselected.`, 'info', 2000);
+            } else {
+                if (selectedDriverIds.length >= 2) {
+                    showMessage("Team full. Deselect a driver first.", 'error'); return;
+                }
+                if (budget < driverToSelect.cost) {
+                    showMessage(`Insufficient funds for ${driverToSelect.name}.`, 'error'); return;
+                }
+                selectedDriverIds.push(driverId);
+                budget -= driverToSelect.cost;
+                showMessage(`${driverToSelect.name} selected!`, 'success', 2000);
+            }
+
+            document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`;
+            renderDriversList('drivers-list', true);
+
+            if (selectedDriverIds.length === 2) {
+                showMessage("Team complete! Preparing management screen...", 'success', 2500);
+                // Initialize AI budgets etc. *after* player team is confirmed
+                setTimeout(initializeGameAfterSetup, 1500);
+            }
+        }
+
+         function handleCarUpgrade(upgradeId) {
+             const upgrade = upgrades.find(u => u.id === upgradeId);
+             if (!upgrade || !selectedCar) return;
+              if (purchasedUpgrades[upgrade.id]) {
+                 showMessage("Upgrade already purchased.", 'error'); return;
+             }
+             if (budget < upgrade.cost) {
+                 showMessage("Insufficient funds for this upgrade.", 'error'); return;
+             }
+             budget -= upgrade.cost;
+             const maxStatValue = 120; // Player max stat
+             selectedCar[upgrade.effect.stat] = Math.min(maxStatValue, selectedCar[upgrade.effect.stat] + upgrade.effect.value);
+             purchasedUpgrades[upgrade.id] = true;
+             document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`;
+             showMessage(`${upgrade.name} purchased! +${upgrade.effect.value} ${upgrade.effect.stat}.`, 'success');
+             renderCarsAndDevelopment();
+         }
+
+
+        // Updated to use new prize money logic
+        function handleSimulateNextRace() {
+            if (selectedDriverIds.length !== 2 || !selectedCar) {
+                showMessage("Team setup incomplete.", 'error'); return;
+            }
+            if (currentRaceIndex >= totalRacesInSeason) {
+                 showMessage("Season is already complete!", 'info'); return;
+            }
+
+            const raceButton = document.getElementById('race-button');
+            raceButton.disabled = true;
+            raceButton.textContent = 'Simulating...';
+            document.getElementById('race-results').style.display = 'none';
+            showMessage("Simulating race...", 'info', 1000);
+
+            // --- Start Simulation Logic ---
+            setTimeout(() => {
+                const currentRace = races[currentRaceIndex];
+
+                // -- 1. Generate Placeholder Race Results --
+                const raceParticipants = currentDrivers.map(driver => ({ driver: driver }));
+                const sortedResults = sortRaceResults(raceParticipants); // Uses shuffle
+
+                // -- 2. Award Points & Calculate Prize Money (Player & AI) --
+                let prizeMoneyEarnedInRacePlayer = 0;
+                lastAIRaceUpgrades = {}; // Clear previous visual indicators
+
+                sortedResults.forEach((result, index) => {
+                    const driverTeamId = result.driver.teamId;
+                    let moneyFromPoints = 0;
+                    let moneyFromBonus = 0;
+
+                     // Award points
+                     if (index < pointsSystem.length) {
+                         const pointsAwarded = pointsSystem[index];
+                         driverSeasonScores[result.driver.id] = (driverSeasonScores[result.driver.id] || 0) + pointsAwarded;
+                         moneyFromPoints = pointsAwarded * 300000; // Calculate points money
+                     }
+
+                     // Award top 3 bonus
+                     if (index < 3) {
+                         moneyFromBonus = 1000000;
+                     }
+
+                     // Add earnings to the correct budget
+                     const totalMoneyEarnedDriver = moneyFromPoints + moneyFromBonus;
+                     if (totalMoneyEarnedDriver > 0) {
+                         if (driverTeamId === selectedEcurieId) {
+                             prizeMoneyEarnedInRacePlayer += totalMoneyEarnedDriver;
+                         } else if (driverTeamId) { // Check AI driver has a team
+                             aiTeamBudgets[driverTeamId] = (aiTeamBudgets[driverTeamId] || 0) + totalMoneyEarnedDriver;
+                         }
+                     }
+                });
+
+                // -- 3. Update Player Budget --
+                budget += prizeMoneyEarnedInRacePlayer;
+                document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`;
+
+                // -- 4. AI Spending & Upgrading Logic --
+                console.log("--- AI Upgrade Phase ---");
+                ecuries.forEach(team => {
+                    if (team.id !== selectedEcurieId) { // Only for AI teams
+                        const teamId = team.id;
+                        const currentAIBudget = aiTeamBudgets[teamId] || 0;
+                        const purchasedAIUpgrades = aiTeamUpgrades[teamId] || {};
+                        const aiCar = getCarById(team.defaultCarId);
+
+                        if (!aiCar) return;
+
+                        const availableUpgrades = upgrades.filter(upg => !purchasedAIUpgrades[upg.id]);
+                        const affordableUpgrades = availableUpgrades.filter(upg => upg.cost <= currentAIBudget);
+
+                        if (affordableUpgrades.length > 0) {
+                            affordableUpgrades.sort((a, b) => b.cost - a.cost); // Most expensive first
+                            const upgradeToBuy = affordableUpgrades[0];
+
+                            aiTeamBudgets[teamId] -= upgradeToBuy.cost;
+                            purchasedAIUpgrades[upgradeToBuy.id] = true;
+                            aiTeamUpgrades[teamId] = purchasedAIUpgrades;
+
+                            const maxStatValueAI = 115;
+                            const statToUpgrade = upgradeToBuy.effect.stat;
+                            const upgradeValue = upgradeToBuy.effect.value;
+                            const currentStatValue = aiCar[statToUpgrade];
+                            const newValue = Math.min(maxStatValueAI, currentStatValue + upgradeValue);
+                            const actualChange = newValue - currentStatValue;
+
+                            if (actualChange > 0) {
+                                aiCar[statToUpgrade] = newValue;
+                                lastAIRaceUpgrades[aiCar.id] = { stat: statToUpgrade, change: actualChange };
+                                console.log(`AI Team ${teamId} (${team.name}) purchased ${upgradeToBuy.name}. +${actualChange} ${statToUpgrade}. Budget left: $${formatNumber(aiTeamBudgets[teamId])}`);
+                            }
+                            // Optional: Log failed upgrade attempts if needed
+                        }
+                        // Optional: Log teams that couldn't afford upgrades
+                    }
+                });
+                console.log("--- End AI Upgrade Phase ---");
+
+
+                // -- 5. Advance Race Index & Update UI --
+                currentRaceIndex++;
+
+                renderRaceResults(sortedResults, currentRace.name, prizeMoneyEarnedInRacePlayer);
+                renderSeasonStandings();
+                renderCalendar();
+                renderCarsAndDevelopment();
+
+                // Update race button
+                if (currentRaceIndex < totalRacesInSeason) {
+                    raceButton.textContent = `Simulate: ${races[currentRaceIndex].name}`;
+                    raceButton.disabled = false;
+                } else {
+                    raceButton.textContent = 'Season Finished';
+                    raceButton.disabled = true;
+                    showMessage("Season Complete! Check final standings.", 'success', 5000);
+                }
+
+            }, 500); // Shorter delay
+
+        }
+
+
+        // --- Initialization ---
+        function initGame() {
+             // Reset all state variables
+             teamName = ''; selectedEcurieId = null; selectedDriverIds = []; selectedCar = null;
+             budget = 0; purchasedUpgrades = {}; driverSeasonScores = {}; currentRaceIndex = 0;
+             currentDrivers = JSON.parse(JSON.stringify(drivers));
+             currentCars = JSON.parse(JSON.stringify(cars));
+             aiTeamBudgets = {};
+             aiTeamUpgrades = {};
+             lastAIRaceUpgrades = {};
+
+             // Reset UI
+             document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`;
+             document.getElementById('team-management-screen').style.display = 'none';
+             document.getElementById('ecurie-selection').style.display = 'none';
+             document.getElementById('initial-driver-selection').style.display = 'none';
+             document.getElementById('initial-budget-selection').style.display = 'grid';
+
+            // Start the setup flow
+            renderBudgetSelection();
+            setupTabs();
+            console.log("Game Initialized. Select Budget.");
+        }
+
+        window.onload = initGame;
+
+    </script>
+</body>
+</html>
