@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>F1 Team Manager</title>
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Basic styling for the body */
         body {
@@ -285,6 +288,7 @@
         .bar-chart-item.player-team .bar { background-color: #ffae42; }
         .bar-value { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: #fff; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.7); }
         .bar .bar-value-inside { padding-left: 5px; color: #fff; font-size: 0.8rem; line-height: 20px; font-weight: bold; }
+        #standings-chart-container canvas { max-height: 400px; }
 
         /* --- Notification Styles --- */
         #notifications-list {list-style: none; padding: 0; max-height: 400px; overflow-y: auto; background-color: #252525; border: 1px solid #444; border-radius: 6px; padding: 1rem;}
@@ -300,7 +304,7 @@
         /* Dev Tab Styles */
         #selected-car-display { margin-bottom: 2rem; padding: 1.5rem; border-radius: 10px; background-color: #333; box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5); border: 1px solid #555; }
         #selected-car-display h4 { margin-top: 0; color: #ff9a21; font-size: 1.2rem; margin-bottom: 1rem; font-weight: 700;}
-        #selected-car-display ul { display: none; /* Hide the old list */ }
+        #selected-car-display ul { display: none; } /* Hide the old list */
         #car-upgrade-options-container { margin-bottom: 2.5rem; }
         #car-upgrade-options-container h3 { color: #ff9a21; margin-bottom: 1.2rem; font-size: 1.3rem; border-bottom: 1px solid #666; padding-bottom: 0.7rem; font-weight: 700;}
         #car-upgrade-options .card { background-color: #3a3a3a; }
@@ -437,8 +441,9 @@
                 <h2>Season Standings</h2>
                 <p id="season-info">Season Info Placeholder</p>
                  <div id="standings-chart-container" class="chart-container">
-                    <h4 class="chart-title">Driver Points Chart</h4>
-                    <div id="standings-chart"></div>
+                    <h4 class="chart-title">Driver Points Progression</h4>
+                    <canvas id="standings-line-chart-canvas"></canvas>
+                     <p id="standings-chart-placeholder" style="text-align: center; color: #aaa; margin-top: 1rem;">Complete the first race to see the chart.</p>
                 </div>
                 <div id="season-standings-list-container">
                      <ul id="season-standings-list"></ul>
@@ -454,14 +459,14 @@
                  </div>
              </div>
 
-            <!-- Race Tab -->
+            <!-- Race Tab (REVISED STRUCTURE with Sub-Tabs) -->
             <div id="race-tab" class="tab-content" style="display: none;">
                  <h2>Race HQ</h2>
-                 <div id="race-controls">
+                  <div id="race-controls">
                      <button id="run-qualifying-button" style="display: none;">Run Qualifying</button>
                      <button id="start-race-button" style="display: none;">Start Race (Live)</button>
                      <button id="accelerate-race-button" style="display: none;">Accelerate Race</button>
-                     <button id="next-gp-button" style="display: none;">Finish the Weekend</button>
+                     <button id="next-gp-button" style="display: none;">Next Race Weekend</button>
                      <button id="next-season-button" style="display: none;">Start Next Season</button>
                  </div>
                  <div class="sub-tabs">
@@ -503,7 +508,7 @@
                       <p id="final-results-placeholder" style="text-align: center; color: #aaa; margin-top: 2rem;">Complete the race to see final results.</p>
                  </div>
                  <div id="visual-simulation-placeholder" style="display:none;"></div>
-            </div>
+            </div> <!-- End #race-tab -->
 
              <!-- Notifications Tab -->
              <div id="notifications-tab" class="tab-content" style="display: none;">
@@ -557,6 +562,8 @@
         let marketSelectedDriverIds = [];
         let notificationsLog = [];
         const MAX_NOTIFICATIONS = 50;
+        let driverRaceHistory = {};
+        let standingsChartInstance = null;
         const RACE_DURATION_SECONDS = 60, RACE_UPDATE_INTERVAL_MS = 500, TOTAL_RACE_SEGMENTS = (RACE_DURATION_SECONDS * 1000) / RACE_UPDATE_INTERVAL_MS, CONCEPTUAL_LAPS = 60;
         const QUALI_DRIVER_WEIGHT = 0.5, QUALI_CAR_SPEED_WEIGHT = 0.3, QUALI_CAR_HANDLING_WEIGHT = 0.2, QUALI_RANDOM_FACTOR = 0.05;
         const RACE_DRIVER_PACE_WEIGHT = 0.4, RACE_CAR_SPEED_WEIGHT = 0.25, RACE_CAR_HANDLING_WEIGHT = 0.15, RACE_CONSISTENCY_FACTOR = 0.1;
@@ -645,8 +652,9 @@
         function renderCarStatBars(car) { const chartDiv = document.getElementById('car-stats-chart'); if (!chartDiv) return; const maxStatValue = 120; const stats = [ { name: 'Speed', value: car.speed, className: 'speed' }, { name: 'Handling', value: car.handling, className: 'handling' }, { name: 'Reliability', value: car.reliability, className: 'reliability' }, ]; let chartHtml = ''; stats.forEach(stat => { const percentage = Math.max(0, Math.min(100, (stat.value / maxStatValue) * 100)); chartHtml += ` <div class="bar-chart-item"> <span class="bar-label">${stat.name}:</span> <div class="bar-container"> <div class="bar ${stat.className}" style="width: ${percentage}%;"> <span class="bar-value-inside">${stat.value}</span> </div> </div> </div> `; }); chartDiv.innerHTML = chartHtml; }
         function renderCarUpgradeOptions() { const uo = document.getElementById('car-upgrade-options'); if (!uo) return; if (selectedCar === null) { uo.innerHTML = '<p>Select team/drivers first.</p>'; return; } uo.innerHTML = UpgradesData.map(u => { const ip = purchasedUpgrades[u.id]; const ca = budget >= u.cost; const id = ip || !ca; return `<div class="card ${id ? 'disabled' : ''}"><h3>${u.name}</h3><ul><li>Cost: $${formatNumber(u.cost)}</li><li>Effect: +${u.effect.value} ${u.effect.stat}</li></ul><button data-upgrade-id="${u.id}" ${id ? 'disabled' : ''}>${ip ? 'Purchased' : (ca ? 'Purchase' : 'Insufficient Funds')}</button></div>`; }).join(''); uo.querySelectorAll('button:not(:disabled)').forEach(b => b.addEventListener('click', () => handleCarUpgrade(parseInt(b.dataset.upgradeId)))); }
         function renderOpponentCars(div) { div.innerHTML = currentEcuries.filter(e => e.id !== selectedEcurieId).map(ec => { const oc = getCarById(ec.defaultCarId); if (oc) { const ui = lastAIRaceUpgrades[oc.id]; const cab = aiTeamBudgets[ec.id] || 0; const ss = (s) => `${oc[s]} ${ui && ui.stat === s ? `<span class="stat-increase">(+${ui.change})</span>` : ''}`; return `<div class="card disabled"><h3>${ec.name}'s ${oc.name}</h3><ul><li>Budget: $${formatNumber(cab)}</li><li>Speed: ${ss('speed')}</li><li>Handling: ${ss('handling')}</li><li>Reliability: ${ss('reliability')}</li></ul></div>`; } return ''; }).join(''); }
-        function renderSeasonStandings() { const sl = document.getElementById('season-standings-list'); const si = document.getElementById('season-info'); const scd = document.getElementById('standings-chart'); if (!sl || !si || !scd) return; let sst = `${currentSeasonYear} Season`; if (currentRaceIndex === 0 && gameState !== 'DRIVER_MARKET') sst += ' - Pre-Season'; else if (gameState === 'SEASON_END' || (gameState === 'DRIVER_MARKET' && currentRaceIndex === 0)) sst += ' - Final Standings'; else sst += ` - After Race ${currentRaceIndex} / ${totalRacesInSeason}`; si.textContent = sst; const dsa = Object.entries(driverSeasonScores).map(([dId, p]) => ({ driver: getDriverById(dId), points: p || 0 })).filter(i => i.driver).sort((a, b) => b.points - a.points || a.driver.name.localeCompare(b.driver.name)); renderStandingsChart(dsa, scd); let listHtml = ''; dsa.forEach((i, idx) => { const pos = idx + 1; const ipd = selectedDriverIds.includes(i.driver.id); const t = getTeamById(i.driver.teamId); const tnd = t ? ` (${t.name})` : ''; listHtml += `<li class="${ipd ? 'player-team' : ''}"><span class="position-number">${pos}.</span><span>${i.driver.name}${tnd}</span><span>${i.points} Pts</span></li>`; }); sl.innerHTML = listHtml; }
-        function renderStandingsChart(sortedScores, chartContainer) { if (!sortedScores || sortedScores.length === 0) { chartContainer.innerHTML = '<p style="text-align:center; color: #aaa;">No standings data yet.</p>'; return; } const maxPoints = Math.max(10, ...sortedScores.map(item => item.points)) * 1.1; let chartHtml = ''; sortedScores.forEach((item, index) => { const percentage = maxPoints > 0 ? Math.max(0, Math.min(100, (item.points / maxPoints) * 100)) : 0; const isPlayerTeam = selectedDriverIds.includes(item.driver.id); chartHtml += `<div class="bar-chart-item ${isPlayerTeam ? 'player-team' : ''}"> <span class="bar-label">${index + 1}. ${item.driver.name}</span> <div class="bar-container"> <div class="bar" style="width: ${percentage}%;"> ${percentage > 10 ? `<span class="bar-value-inside">${item.points} Pts</span>` : ''} </div> ${percentage <= 10 ? `<span class="bar-value">${item.points} Pts</span>` : ''} </div> </div>`; }); chartContainer.innerHTML = chartHtml; }
+        function renderSeasonStandings() { const sl = document.getElementById('season-standings-list'); const si = document.getElementById('season-info'); const chartCanvas = document.getElementById('standings-line-chart-canvas'); const chartPlaceholder = document.getElementById('standings-chart-placeholder'); if (!sl || !si || !chartCanvas || !chartPlaceholder) return; sl.innerHTML = ''; let sst = `${currentSeasonYear} Season`; if (currentRaceIndex === 0 && gameState !== 'DRIVER_MARKET') sst += ' - Pre-Season'; else if (gameState === 'SEASON_END' || (gameState === 'DRIVER_MARKET' && currentRaceIndex === 0)) sst += ' - Final Standings'; else sst += ` - After Race ${currentRaceIndex} / ${totalRacesInSeason}`; si.textContent = sst; const dsa = Object.entries(driverSeasonScores).map(([dId, p]) => ({ driver: getDriverById(dId), points: p || 0 })).filter(i => i.driver).sort((a, b) => b.points - a.points || a.driver.name.localeCompare(b.driver.name)); renderStandingsLineChart(dsa, chartCanvas, chartPlaceholder); let listHtml = ''; dsa.forEach((i, idx) => { const pos = idx + 1; const ipd = selectedDriverIds.includes(i.driver.id); const t = getTeamById(i.driver.teamId); const tnd = t ? ` (${t.name})` : ''; listHtml += `<li class="${ipd ? 'player-team' : ''}"><span class="position-number">${pos}.</span><span>${i.driver.name}${tnd}</span><span>${i.points} Pts</span></li>`; }); sl.innerHTML = listHtml; }
+        function renderStandingsLineChart(sortedScores, canvasElement, placeholderElement) { if (!Chart) { console.error("Chart.js not loaded!"); placeholderElement.textContent = 'Error loading chart library.'; placeholderElement.style.display = 'block'; canvasElement.style.display = 'none'; return; } if (currentRaceIndex === 0 && gameState !== 'DRIVER_MARKET' && gameState !== 'SEASON_END') { placeholderElement.textContent = 'Complete the first race to see the chart.'; placeholderElement.style.display = 'block'; canvasElement.style.display = 'none'; if (standingsChartInstance) { standingsChartInstance.destroy(); standingsChartInstance = null; } return; } placeholderElement.style.display = 'none'; canvasElement.style.display = 'block'; if (standingsChartInstance) { standingsChartInstance.destroy(); } const ctx = canvasElement.getContext('2d'); const raceCountForLabels = Math.max(1, currentRaceIndex); const labels = Array.from({ length: raceCountForLabels }, (_, i) => `R${i + 1}`); const datasets = sortedScores.slice(0, 10).map((item, index) => { const driverId = item.driver.id; const history = driverRaceHistory[driverId] || []; const color = generateChartColors(index); const dataPoints = labels.map((_, raceIdx) => history[raceIdx] ?? (raceIdx === 0 ? 0 : null)); return { label: item.driver.name, data: dataPoints, borderColor: color, backgroundColor: color + '80', tension: 0.1, fill: false, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2, }; }); standingsChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#e0e0e0', boxWidth: 15, padding: 15 } }, tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#ff8700', bodyColor: '#ffffff', }, title: { display: false } }, scales: { x: { title: { display: true, text: 'Race Number', color: '#ccc' }, ticks: { color: '#ccc' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }, y: { title: { display: true, text: 'Total Points', color: '#ccc' }, beginAtZero: true, ticks: { color: '#ccc' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } } } } }); }
+        function generateChartColors(index) { const colors = [ '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#E7E9ED', '#83AFA7', '#EF5350', '#AB47BC', '#42A5F5', '#66BB6A', '#FFA726', '#78909C', '#EC407A', '#5C6BC0', '#26A69A', '#FFCA28', '#8D6E63', '#BDBDBD' ]; return colors[index % colors.length]; }
         function renderCalendar() { const cl = document.getElementById('calendar-list'); const ci = document.getElementById('calendar-info'); if (!cl || !ci) return; ci.textContent = `${currentSeasonYear} Race Schedule: ${currentRaceIndex}/${totalRacesInSeason} completed.`; cl.innerHTML = currentSeasonCalendar.map((r, i) => { const isc = i < currentRaceIndex; const isn = i === currentRaceIndex; const lic = `${isc ? 'completed' : ''} ${isn ? 'next-race' : ''}`.trim(); return `<li class="${lic}"><span class="race-name">${i + 1}. ${r.name}</span><ul class="race-details"><li>Track Type: ${getTrackType(r)}</li><li>Key Stats: Spd ${r.speed} / Hnd ${r.handling} / Rel ${r.reliability}</li></ul></li>`; }).join(''); }
         function getTrackType(r) { if (r.speed > 95) return "High Speed"; if (r.handling > 95) return "High Handling"; if (r.speed > 90 && r.handling < 80) return "Speed Focused"; if (r.handling > 90 && r.speed < 80) return "Handling Focused"; if (r.speed > 85 && r.handling > 85) return "Balanced"; return "Mixed"; }
         function renderQualifyingResults(stage, results) { const listEl = document.querySelector(`#${stage}-results ol`); if (!listEl) return; listEl.innerHTML = results.map((r, i) => { const t = getTeamById(r.driver.teamId); const tns = t ? ` (${t.name.substring(0, 3).toUpperCase()})` : ''; const ts = r.time.toFixed(3); const ip = selectedDriverIds.includes(r.driver.id); return `<li class="${ip ? 'player-driver' : ''}">${i + 1}. ${r.driver.name}${tns} - ${ts}</li>`; }).join(''); if (stage === 'q1' || stage === 'q2') { const co = (stage === 'q1') ? 15 : 10; listEl.querySelectorAll('li').forEach((li, i) => { if (i >= co) li.style.opacity = '0.6'; }); } }
@@ -664,7 +672,14 @@
         function handleRunQualifyingSequence() { const currentRace = currentSeasonCalendar[currentRaceIndex]; if (!currentRace) return; showMessage(`Running Qualifying for ${currentRace.name}...`, 'info', 3000); document.getElementById('run-qualifying-button').disabled = true; clearQualifyingUI(); const participants = currentDrivers.filter(d => d.teamId !== null).map(drv => ({ driver: drv, car: getCarById(getTeamById(drv.teamId)?.defaultCarId) })).filter(p => p.car); if (participants.length < 2) { showMessage("Not enough participants.", "error"); document.getElementById('run-qualifying-button').disabled = false; return; } document.getElementById('qualifying-title').textContent = `Qualifying: ${currentRace.name}`; setTimeout(() => { const q1A = runQualifyingStage(participants, 15, 'q1'); showMessage('Q1 Complete. Running Q2...', 'info', 1500); setTimeout(() => { const q2A = runQualifyingStage(q1A, 10, 'q2'); showMessage('Q2 Complete. Running Q3...', 'info', 1500); setTimeout(() => { runQualifyingStage(q2A, 10, 'q3'); showMessage('Qualifying Complete!', 'success', 2000); determineStartingGrid(); renderStartingGrid(); raceCompletedForCurrentIndex = false; updateRaceHQButtonState(); activateRaceSubTab('qualifying'); }, 1000); }, 1000); }, 500); }
         function startRaceSimulation() { if (startingGrid.length === 0) { showMessage("Run qualifying first.", "error"); return; } const currentRace = currentSeasonCalendar[currentRaceIndex]; maxDnfThisRace = Math.floor(Math.random() * 3); console.log(`Maximum DNFs for this race set to: ${maxDnfThisRace}`); showMessage(`Starting Race: ${currentRace.name}! (Max ${maxDnfThisRace} DNF(s))`, 'info', 3000); document.getElementById('start-race-button').disabled = true; document.getElementById('accelerate-race-button').disabled = true; document.getElementById('live-race-area').style.display = 'block'; document.getElementById('live-race-placeholder').style.display = 'none'; document.getElementById('race-final-subtab-content').classList.remove('active'); currentLap = 0; dnfCountThisRace = 0; raceLeaderboard = startingGrid.map(p => ({ driver: p.driver, car: p.car, status: 'Racing', progress: 0, segmentProgress: 0 })); renderLiveLeaderboard(); let segSim = 0; if (raceIntervalId) clearInterval(raceIntervalId); raceIntervalId = setInterval(() => { if (segSim >= TOTAL_RACE_SEGMENTS || raceLeaderboard.every(p => p.status !== 'Racing')) { endRaceSimulation(); return; } runRaceSegment(); segSim++; currentLap = Math.min(CONCEPTUAL_LAPS, Math.floor((segSim / TOTAL_RACE_SEGMENTS) * CONCEPTUAL_LAPS)); renderLiveLeaderboard(); }, RACE_UPDATE_INTERVAL_MS); activateRaceSubTab('live'); }
         function runRaceSegment() { const track = currentSeasonCalendar[currentRaceIndex]; raceLeaderboard.forEach(e => { if (e.status === 'Racing') { if (checkReliability(e.driver, e.car, track)) { e.status = 'DNF'; e.segmentProgress = -1; dnfCountThisRace++; console.log(`${e.driver.name} DNF! (Car: ${e.car.reliability}) DNF Count: ${dnfCountThisRace}/${maxDnfThisRace}`); } else { e.segmentProgress = calculateRaceSegmentPerformance(e.driver, e.car, track); e.progress += e.segmentProgress; } } else { e.segmentProgress = 0; } }); for (let i = raceLeaderboard.length - 2; i >= 0; i--) { const atkE = raceLeaderboard[i + 1], defE = raceLeaderboard[i]; if (atkE.status === 'Racing' && defE.status === 'Racing' && atkE.segmentProgress > defE.segmentProgress) { if (defE.progress - atkE.progress < PROGRESS_PER_SEGMENT_BASE * 0.75) { if (attemptOvertake(atkE, defE, track)) { [raceLeaderboard[i], raceLeaderboard[i + 1]] = [raceLeaderboard[i + 1], raceLeaderboard[i]]; } } } } raceLeaderboard.sort((a, b) => { const so = { 'Racing': 1, 'Finished': 2, 'DNF': 3 }; if (so[a.status] !== so[b.status]) return so[a.status] - so[b.status]; return b.progress - a.progress; }); }
-        function endRaceSimulationPostProcessing() { const raceIdx = currentRaceIndex; const raceName = currentSeasonCalendar[raceIdx]?.name || "Unknown Race"; showMessage(`Race Finished: ${raceName}!`, 'success', 3000); raceLeaderboard.forEach(e => { if (e.status === 'Racing') e.status = 'Finished'; }); raceLeaderboard.sort((a, b) => { const so = { 'Finished': 1, 'DNF': 2 }; if (a.status !== b.status) return so[a.status] - so[b.status]; return b.progress - a.progress; }); console.log("Final Leaderboard:", raceLeaderboard.map(e => `${e.driver.name}(${e.status}-${e.progress.toFixed(0)})`).join(',')); let pMoneyPlayer = 0; const finishers = raceLeaderboard.filter(r => r.status === 'Finished'); finishers.forEach((r, i) => { const dtId = r.driver.teamId; let mP = 0, mB = 0; if (i < PointsSystem.length) { const pts = PointsSystem[i]; driverSeasonScores[r.driver.id] = (driverSeasonScores[r.driver.id] || 0) + pts; mP = pts * PrizeMoneyPerPoint; } if (i < 3) mB = PrizeMoneyTop3Bonus; const tm = mP + mB; if (tm > 0) { if (dtId === selectedEcurieId) { pMoneyPlayer += tm; } else if (aiTeamBudgets.hasOwnProperty(dtId)) { aiTeamBudgets[dtId] = (aiTeamBudgets[dtId] || 0) + tm; console.log(`AI Team ${getTeamById(dtId)?.name} earned $${formatNumber(tm)}. New Budget: $${formatNumber(aiTeamBudgets[dtId])}`); } } }); budget += pMoneyPlayer; document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`; runAIUpgradePhase(); generateAIUpgradeNotifications(); raceCompletedForCurrentIndex = true; document.getElementById('race-results-title').textContent = `Race Results: ${raceName}`; renderFinalRaceResults(raceLeaderboard, raceName, pMoneyPlayer); renderAllTabs(); updateRaceHQButtonState(); document.getElementById('live-race-area').style.display = 'none'; document.getElementById('live-race-placeholder').style.display = 'block'; activateRaceSubTab('final');}
+        function endRaceSimulationPostProcessing() {
+            const raceIdx = currentRaceIndex; const raceName = currentSeasonCalendar[raceIdx]?.name || "Unknown Race";
+            showMessage(`Race Finished: ${raceName}!`, 'success', 3000); raceLeaderboard.forEach(e => { if (e.status === 'Racing') e.status = 'Finished'; }); raceLeaderboard.sort((a, b) => { const so = { 'Finished': 1, 'DNF': 2 }; if (a.status !== b.status) return so[a.status] - so[b.status]; return b.progress - a.progress; }); console.log("Final Leaderboard:", raceLeaderboard.map(e => `${e.driver.name}(${e.status}-${e.progress.toFixed(0)})`).join(','));
+            let pMoneyPlayer = 0; const finishers = raceLeaderboard.filter(r => r.status === 'Finished');
+            finishers.forEach((r, i) => { const dtId = r.driver.teamId; let mP = 0, mB = 0; if (i < PointsSystem.length) { const pts = PointsSystem[i]; driverSeasonScores[r.driver.id] = (driverSeasonScores[r.driver.id] || 0) + pts; if (!driverRaceHistory[r.driver.id]) { driverRaceHistory[r.driver.id] = Array(totalRacesInSeason).fill(0); } driverRaceHistory[r.driver.id][raceIdx] = driverSeasonScores[r.driver.id]; mP = pts * PrizeMoneyPerPoint; } if (i < 3) mB = PrizeMoneyTop3Bonus; const tm = mP + mB; if (tm > 0) { if (dtId === selectedEcurieId) { pMoneyPlayer += tm; } else if (aiTeamBudgets.hasOwnProperty(dtId)) { aiTeamBudgets[dtId] = (aiTeamBudgets[dtId] || 0) + tm; console.log(`AI Team ${getTeamById(dtId)?.name} earned $${formatNumber(tm)}. New Budget: $${formatNumber(aiTeamBudgets[dtId])}`); } } });
+            Object.keys(driverSeasonScores).forEach(driverIdStr => { const driverId = parseInt(driverIdStr); if (!driverRaceHistory[driverId]) { driverRaceHistory[driverId] = Array(totalRacesInSeason).fill(0); } if (driverRaceHistory[driverId][raceIdx] === undefined || (driverRaceHistory[driverId][raceIdx] === 0 && driverSeasonScores[driverId] === 0) ) { driverRaceHistory[driverId][raceIdx] = raceIdx > 0 ? (driverRaceHistory[driverId][raceIdx - 1] || 0) : 0; }});
+            budget += pMoneyPlayer; document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`; runAIUpgradePhase(); generateAIUpgradeNotifications(); raceCompletedForCurrentIndex = true; document.getElementById('race-results-title').textContent = `Race Results: ${raceName}`; renderFinalRaceResults(raceLeaderboard, raceName, pMoneyPlayer); renderAllTabs(); updateRaceHQButtonState(); document.getElementById('live-race-area').style.display = 'none'; document.getElementById('live-race-placeholder').style.display = 'block'; activateRaceSubTab('final');
+        }
         function endRaceSimulation() { if (raceIntervalId) { clearInterval(raceIntervalId); raceIntervalId = null; } endRaceSimulationPostProcessing(); }
         function handleAccelerateRace() { if (startingGrid.length === 0) { showMessage("Run qualifying first.", "error"); return; } if (raceIntervalId) { clearInterval(raceIntervalId); raceIntervalId = null; } const currentRace = currentSeasonCalendar[currentRaceIndex]; showMessage(`Accelerating Race: ${currentRace.name}...`, 'info', 1500); document.getElementById('start-race-button').disabled = true; document.getElementById('accelerate-race-button').disabled = true; document.getElementById('live-race-area').style.display = 'none'; maxDnfThisRace = Math.floor(Math.random() * 3); console.log(`Maximum DNFs for this race set to: ${maxDnfThisRace}`); dnfCountThisRace = 0; raceLeaderboard = startingGrid.map(p => ({ driver: p.driver, car: p.car, status: 'Racing', progress: 0, segmentProgress: 0 })); console.log("Accelerating race segments..."); for (let segSim = 0; segSim < TOTAL_RACE_SEGMENTS; segSim++) { runRaceSegment(); } console.log("Acceleration complete."); endRaceSimulationPostProcessing(); }
         function runAIUpgradePhase() { console.log("--- AI Upgrade Phase ---"); lastAIRaceUpgrades = {}; currentEcuries.forEach(team => { if (team.id !== selectedEcurieId && aiTeamBudgets.hasOwnProperty(team.id)) { const tid = team.id; const bAI = aiTeamBudgets[tid]; const uAI = aiTeamUpgrades[tid] || {}; const cAI = getCarById(team.defaultCarId); if (!cAI || bAI <= 0) return; const aff = UpgradesData.filter(u => !uAI[u.id] && u.cost <= bAI).sort((a, b) => b.cost - a.cost); if (aff.length > 0) { const upg = aff[0]; aiTeamBudgets[tid] -= upg.cost; uAI[upg.id] = true; aiTeamUpgrades[tid] = uAI; const st = upg.effect.stat; const cur = cAI[st]; const nV = Math.min(maxStatValueAI, cur + upg.effect.value); const ac = nV - cur; if (ac > 0) { cAI[st] = nV; lastAIRaceUpgrades[cAI.id] = { stat: st, change: ac }; } else console.log(`AI ${team.name} tried ${upg.name}, stat maxed. Budget: $${formatNumber(aiTeamBudgets[tid])}`); } } }); console.log("--- End AI Upgrade Phase ---"); }
@@ -704,16 +719,7 @@
             let playerPoints = selectedDriverIds.reduce((sum, id) => driverSeasonScores[id] ? sum + driverSeasonScores[id] : sum, 0);
             budget = baseBudgetNextSeason + (playerPoints * playerBonusPerPoint);
             // Calculate AI budgets based on *their* previous season points
-            Object.keys(aiTeamBudgets).forEach(teamId => {
-                 const team = getTeamById(parseInt(teamId)); // Get the team object
-                 if (team) {
-                     let teamPoints = team.driverIds.reduce((sum, driverId) => sum + (driverSeasonScores[driverId] || 0), 0);
-                     aiTeamBudgets[teamId] = aiBaseBudgetNextSeason + (teamPoints * aiBonusPerPoint);
-                 } else {
-                      aiTeamBudgets[teamId] = aiBaseBudgetNextSeason; // Default if team not found (shouldn't happen)
-                 }
-            });
-
+            Object.keys(aiTeamBudgets).forEach(teamIdStr => { const teamId = parseInt(teamIdStr); const team = getTeamById(teamId); if (team) { let teamPoints = team.driverIds.reduce((sum, driverId) => sum + (driverSeasonScores[driverId] || 0), 0); aiTeamBudgets[teamId] = aiBaseBudgetNextSeason + (teamPoints * aiBonusPerPoint); } else { aiTeamBudgets[teamId] = aiBaseBudgetNextSeason; } });
             document.getElementById('budget-display').textContent = `Budget: $${formatNumber(budget)}`;
             showMessage(`End of Season ${currentSeasonYear}. Budget calculated. Entering Driver Market...`, 'info', 4000);
             randomizeCarStats(); randomizeDriverStats(); // Add notifications inside these
@@ -726,12 +732,11 @@
             addNotification(`Entering Driver Market for ${currentSeasonYear} season.`, 'transfer');
         }
 
-        // --- Season State Reset (Modified) ---
+        // --- Season State Reset ---
         function resetSeasonState(isNewSeasonStart = false) {
              lastAIRaceUpgrades = {}; qualifyingResults = { q1: [], q2: [], q3: [] }; startingGrid = []; raceLeaderboard = []; if(raceIntervalId) clearInterval(raceIntervalId); raceIntervalId = null; dnfCountThisRace = 0; maxDnfThisRace = 0; raceCompletedForCurrentIndex = false;
-             if (isNewSeasonStart) { currentRaceIndex = 0; driverSeasonScores = {}; currentDrivers.forEach(d => { driverSeasonScores[d.id] = 0; }); purchasedUpgrades = {}; aiTeamUpgrades = {}; /* Stats randomized before this */ }
+             if (isNewSeasonStart) { currentRaceIndex = 0; driverSeasonScores = {}; driverRaceHistory = {}; currentDrivers.forEach(d => { driverSeasonScores[d.id] = 0; driverRaceHistory[d.id] = []; }); purchasedUpgrades = {}; aiTeamUpgrades = {}; if (standingsChartInstance) { standingsChartInstance.destroy(); standingsChartInstance = null; } }
              selectedCar = getCarById(getTeamById(selectedEcurieId)?.defaultCarId);
-             // Budget display updated elsewhere
         }
 
 
@@ -750,7 +755,7 @@
             if (targetTab === 'drivers') renderDriversList('drivers-list-management', false);
             if (targetTab === 'standings') renderSeasonStandings();
             if (targetTab === 'calendar') renderCalendar();
-            if (targetTab === 'notifications') renderNotifications(); // Render notifications when tab selected
+            if (targetTab === 'notifications') renderNotifications();
             if (targetTab === 'race') { updateRaceHQButtonState(); if (!document.querySelector('#race-tab .sub-tab-button.active')) { activateRaceSubTab('qualifying'); } }
         }
 
@@ -762,20 +767,23 @@
         // --- Initialization ---
         function initGame() {
              gameState = 'SETUP';
-             teamName=''; selectedEcurieId=null; selectedDriverIds=[]; selectedCar=null; budget=0; purchasedUpgrades={}; driverSeasonScores={}; currentRaceIndex=0; currentSeasonYear=2024; aiTeamBudgets={}; aiTeamUpgrades={}; lastAIRaceUpgrades={}; currentSeasonCalendar=[]; qualifyingResults={q1:[],q2:[],q3:[]}; startingGrid=[]; raceLeaderboard=[]; if(raceIntervalId) clearInterval(raceIntervalId); raceIntervalId=null; dnfCountThisRace=0; raceCompletedForCurrentIndex = false; maxDnfThisRace = 0; marketSelectedDriverIds = []; notificationsLog = [];
+             teamName=''; selectedEcurieId=null; selectedDriverIds=[]; selectedCar=null; budget=0; purchasedUpgrades={}; driverSeasonScores={}; currentRaceIndex=0; currentSeasonYear=2024; aiTeamBudgets={}; aiTeamUpgrades={}; lastAIRaceUpgrades={}; currentSeasonCalendar=[]; qualifyingResults={q1:[],q2:[],q3:[]}; startingGrid=[]; raceLeaderboard=[]; if(raceIntervalId) clearInterval(raceIntervalId); raceIntervalId=null; dnfCountThisRace=0; raceCompletedForCurrentIndex = false; maxDnfThisRace = 0; marketSelectedDriverIds = []; notificationsLog = []; driverRaceHistory = {};
              currentDrivers = JSON.parse(JSON.stringify(DriversData)).map(d=>({...d, teamId:null})); currentCars = JSON.parse(JSON.stringify(CarsData)); currentEcuries = JSON.parse(JSON.stringify(EcuriesData)).map(e=>({...e, driverIds:[]}));
              document.getElementById('budget-display').textContent=`Budget: $${formatNumber(budget)}`; document.getElementById('team-management-screen').style.display='none'; document.getElementById('driver-market-screen').style.display='none'; document.getElementById('ecurie-selection').style.display='none'; document.getElementById('initial-driver-selection').style.display='none'; document.getElementById('race-results').style.display='none'; document.getElementById('live-race-area').style.display='none'; document.getElementById('run-qualifying-button').style.display='block'; document.getElementById('start-race-button').style.display='none'; document.getElementById('accelerate-race-button').style.display='none'; document.getElementById('next-gp-button').style.display='none'; document.getElementById('next-season-button').style.display='none'; clearQualifyingUI(); document.getElementById('initial-budget-selection').style.display='grid'; document.getElementById('final-results-placeholder').style.display = 'block'; document.getElementById('live-race-placeholder').style.display = 'block';
+             if (standingsChartInstance) { standingsChartInstance.destroy(); standingsChartInstance = null; }
             renderBudgetSelection(); setupTabs(); setupRaceSubTabs(); renderNotifications(); console.log("Game Initialized.");
         }
         function initializeGameAfterSetup() {
              gameState = 'MANAGEMENT';
              const pt = getTeamById(selectedEcurieId); selectedDriverIds.forEach(id => { const drv = getDriverById(id); if(drv) drv.teamId = selectedEcurieId; }); if (pt) pt.driverIds = selectedDriverIds;
-             // Initialize AI Budgets for first season (they start with 0 before earning)
-             aiTeamBudgets = {}; aiTeamUpgrades = {};
-             currentEcuries.forEach(team => { if (team.id !== selectedEcurieId) { aiTeamBudgets[team.id] = 0; aiTeamUpgrades[team.id] = {}; }});
+             // Initialize AI Budgets for first season
+             aiTeamBudgets={}; aiTeamUpgrades={};
+             currentEcuries.forEach(t => { if (t.id !== selectedEcurieId) { aiTeamBudgets[t.id]=0; aiTeamUpgrades[t.id]={};}});
              assignAIDrivers(); // Assign AI drivers and fill vacancies
              console.log("Final Driver assignments (Post Initial Setup):", currentDrivers.map(d=>({n:d.name, t:d.teamId})));
-             generateSeasonCalendar(); resetSeasonState(false); raceCompletedForCurrentIndex = false;
+             generateSeasonCalendar();
+             resetSeasonState(true); // Use resetSeasonState(true) for the *very first* season start
+             raceCompletedForCurrentIndex = false; // Ensure this is false for the first race
              document.getElementById('initial-budget-selection').style.display='none'; document.getElementById('ecurie-selection').style.display='none'; document.getElementById('initial-driver-selection').style.display='none'; document.getElementById('driver-market-screen').style.display = 'none'; document.getElementById('team-management-screen').style.display='block'; clearQualifyingUI(); updateRaceHQButtonState();
              activateTab('development'); renderAllTabs(); activateRaceSubTab('qualifying');
              // --- Add Listeners for ALL Buttons ---
