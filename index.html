@@ -1166,8 +1166,16 @@
         const currentYear = gameState.currentYear;
         drivers.forEach(driver => {
             if (driver.teamId) {
+                // --- FIX START: Get team info *before* the expiry check and add safety check ---
+                const team = getTeamById(driver.teamId);
+                if (!team) {
+                    console.warn(`Could not find team with ID ${driver.teamId} for driver ${driver.name}. Skipping contract processing.`);
+                    return; // Skip this driver if team data is missing
+                }
+                // --- FIX END ---
+
                 if (driver.contract.expiryYear <= currentYear) {
-                    const team = getTeamById(driver.teamId);
+                    // const team = getTeamById(driver.teamId); // <<< REMOVED from here, defined above
                     if (driver.teamId === gameState.playerTeamId) {
                         addPlayerMessage(`Contract expiring: ${driver.name}! Replace during Pre-Season.`, "warning");
                         // Player driver becomes free agent if not replaced by player
@@ -1187,6 +1195,7 @@
                              // Driver stays/renews
                              const newExpiry = currentYear + Math.floor(Math.random() * 2) + 1; // Renew for 1 or 2 years
                              driver.contract.expiryYear = newExpiry;
+                             // Use the 'team' variable defined earlier
                              driver.contract.salaryPerRace = calculateSalaryPerRace(driver, team.reputation); // Recalculate salary on renewal
                              console.log(`AI Driver ${driver.name} contract renewed with ${team.name} until ${newExpiry}.`);
                              addPlayerMessage(`${driver.name} renewed their contract with ${team.name}.`, 'secondary');
@@ -1195,6 +1204,7 @@
                 } else {
                      // If contract not expiring, potentially recalculate salary based on new stats for AI
                      if(driver.teamId !== gameState.playerTeamId) {
+                         // Use the 'team' variable defined earlier
                          driver.contract.salaryPerRace = calculateSalaryPerRace(driver, team.reputation);
                      }
                 }
